@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 csv = "1.1"
 nalgebra = "0.30.1"
+rayon = "1.5.2"
