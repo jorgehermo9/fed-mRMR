@@ -16,7 +16,7 @@ pub struct Dataset{
 	sub_headers:HashMap<String,Vec<String>>,
 	positions:HashMap<String,usize>,
 	instances:usize,
-	a:IMatrix
+	matrix:IMatrix
 }
 
 impl Dataset{
@@ -55,13 +55,8 @@ impl Dataset{
 		
 		
 		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
-		//Intersection of features is the product of A' * A
-		// let transpose = matrix.transpose();
-		// tr_mult(B) => self.transpose * B
-		// let mut result = IMatrix::zeros(sub_headers.len(),sub_headers.len());
-
-		// let result = matrix.tr_mul(&matrix);
-
+		//Intersection of features is the product of A' * A		
+		let result = matrix.tr_mul(&matrix);
 		let positions = sub_headers.iter().enumerate()
 			.map(|(index,value)| (value.to_string(),index))
 			.collect::<HashMap<_,_>>();
@@ -72,16 +67,17 @@ impl Dataset{
 			sub_headers:sub_headers_map,
 			positions,
 			instances:instances.len(),
-			a:matrix,
+			matrix:result,
 		})
 	}
 	pub fn intersection(&self, sub_feature_a: &str, sub_feature_b: &str)->Option<usize>{
-		let (a,b) = match (self.positions.get(sub_feature_a),self.positions.get(sub_feature_b)){
+		let cell = match (self.positions.get(sub_feature_a),self.positions.get(sub_feature_b)){
 			(Some(index_a),Some(index_b))=>(*index_a,*index_b),
 			_=>return None,
 		};
 
-		return Some(self.a.column(a).dot(&self.a.column(b)));
+		// return Some(self.matrix.column(a).dot(&self.matrix.column(b)));
+		return self.matrix.get(cell).cloned();
 	}
 
 	pub fn mutual_info(&self,feature_a: &str, feature_b: &str) -> Option<f64>{
@@ -139,7 +135,6 @@ impl Dataset{
 				|(acc,acc_val),(item,item_val)| if item_val > acc_val {(item,item_val)}else{(acc,acc_val)}).unwrap();
 			
 			remaining_features = remaining_features.into_iter().filter(|f| f!=&most_mrmr.0).collect::<Vec<_>>();
-			println!("{:?}",most_mrmr);
 			selected_features.push(most_mrmr);
 		}
 
