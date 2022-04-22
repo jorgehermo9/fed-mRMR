@@ -34,8 +34,7 @@ fn main() {
 	let duration_mrmr = start_mrmr.elapsed();
 	println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32())
-
+	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
 
 }
 

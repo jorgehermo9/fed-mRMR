@@ -52,6 +52,7 @@ impl Dataset{
 			sub_headers_map.insert(header.to_string(),unique_values.iter().map(|subheader|format!("{header}_{subheader}")).collect());
 			
 		}
+
 		
 		
 		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
@@ -61,7 +62,8 @@ impl Dataset{
 			.map(|(index,value)| (value.to_string(),index))
 			.collect::<HashMap<_,_>>();
 
-
+		println!("{:?}",sub_headers);
+		println!("{}",result);
 		return Ok(Dataset{
 			headers,
 			sub_headers:sub_headers_map,
@@ -143,5 +145,8 @@ impl Dataset{
 
 	pub fn get_headers(&self) -> &Vec<String>{
 		&self.headers
+	}
+	pub fn get_matrix(&self) ->&IMatrix{
+		&self.matrix
 	}
 }
