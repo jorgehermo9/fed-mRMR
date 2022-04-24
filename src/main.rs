@@ -17,21 +17,25 @@ fn main() {
 		Ok(dataset) => dataset
 	};
 	let duration_matrix = start_matrix.elapsed();
-	// for header in &dataset.headers{
-	// 	println!("{header: }");
-	// 	for subheader in &dataset.sub_headers[header]{
-	// 		println!("\t{subheader}:{}",dataset.intersection(subheader,subheader).unwrap())
-	// 	}
-	// }
 
 	let start_mrmr = Instant::now();
 
+
+	for header in dataset.get_headers(){
+		for subheader in &dataset.get_subheaders()[header]{
+			print!("{subheader} ");
+		}
+	}
+	println!("{}",dataset.get_matrix());
+	
 	let selected_features = dataset.mrmr_features();
 	for (index,(feature,value)) in selected_features.into_iter().enumerate(){
 		if feature == "class"{continue}
 		println!("{}. {} -> {}",index+1,feature,value);
 	}
 	let duration_mrmr = start_mrmr.elapsed();
+
+
 	println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
 	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());

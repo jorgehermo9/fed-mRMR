@@ -3,6 +3,9 @@ extern crate nalgebra as na;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
+// use std::fs::File;
+// use std::io::Write;
+
 use std::io;
 use csv::Reader;
 use na::{Dynamic, OMatrix};
@@ -10,15 +13,44 @@ use na::{Dynamic, OMatrix};
 
 type IMatrix = OMatrix<usize, Dynamic, Dynamic>;
 
-//TODO: change sub_headers to HashMap<String,Vec<String>>
 pub struct Dataset{
 	headers:Vec<String>,
-	sub_headers:HashMap<String,Vec<String>>,
+	subheaders:HashMap<String,Vec<String>>,
 	positions:HashMap<String,usize>,
 	instances:usize,
 	matrix:IMatrix
 }
 
+// Function to write onehotmatrix to binary file in graph format
+// fn write_one_hot(matrix: &IMatrix,subheaders:&Vec<String>){
+
+// 	let mut bin_file = File::create("bitmap.bitmap").unwrap();
+// 	let mut headers_file = File::create("headers.headers").unwrap();
+
+// 	for subheader in subheaders{
+// 		headers_file.write_all(format!("{} ",subheader).as_bytes()).unwrap();
+// 	}
+// 	let nodes = matrix.ncols();
+// 	let instances = matrix.nrows();
+// 	// print!("{} ", nodes as i32);
+// 	// print!("{} ",matrix.sum() as i64);
+
+// 	bin_file.write_all(&(nodes as i32).to_le_bytes()).unwrap();
+// 	bin_file.write_all(&(matrix.sum() as i64).to_le_bytes()).unwrap();
+
+
+// 	for i in 0..nodes{
+// 		// print!("{} ",((i+1) as i32) *-1);
+// 		bin_file.write_all(&(((i+1) as i32)*-1).to_le_bytes()).unwrap();
+
+// 		for j in 0..instances{
+// 			if *matrix.get((j,i)).unwrap() == 1{
+// 				// print!("{} ",(j+1) as i32);
+// 				bin_file.write_all(&((j+1) as i32).to_le_bytes()).unwrap();
+// 			}
+// 		}
+// 	}
+// }
 impl Dataset{
 
 	pub fn new <R: io::Read> (reader: Reader<R>)-> Result<Self,Box<dyn Error>>{
@@ -62,11 +94,10 @@ impl Dataset{
 			.map(|(index,value)| (value.to_string(),index))
 			.collect::<HashMap<_,_>>();
 
-		println!("{:?}",sub_headers);
-		println!("{}",result);
+		// write_one_hot(&matrix,&sub_headers);
 		return Ok(Dataset{
 			headers,
-			sub_headers:sub_headers_map,
+			subheaders:sub_headers_map,
 			positions,
 			instances:instances.len(),
 			matrix:result,
@@ -84,7 +115,7 @@ impl Dataset{
 
 	pub fn mutual_info(&self,feature_a: &str, feature_b: &str) -> Option<f64>{
 
-		let sub_headers = &self.sub_headers;
+		let sub_headers = &self.subheaders;
 		let (sub_features_a,sub_features_b) =match (sub_headers.get(feature_a), sub_headers.get(feature_b)){
 			(Some(sub_features_a),Some(sub_features_b)) => (sub_features_a,sub_features_b),
 			_=> return None
@@ -148,5 +179,8 @@ impl Dataset{
 	}
 	pub fn get_matrix(&self) ->&IMatrix{
 		&self.matrix
+	}
+	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
+		&self.subheaders
 	}
 }
