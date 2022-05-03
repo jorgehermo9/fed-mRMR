@@ -1,18 +1,28 @@
 extern crate nalgebra as na;
 
+use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::error::Error;
 // use std::fs::File;
 // use std::io::Write;
 
+use std::fs::File;
+use std::fs::OpenOptions;
 use std::io;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 use csv::Reader;
 use na::{Dynamic, OMatrix};
+use serde::{Serialize, Deserialize};
+
 
 
 type IMatrix = OMatrix<usize, Dynamic, Dynamic>;
 
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dataset{
 	headers:Vec<String>,
 	subheaders:HashMap<String,Vec<String>>,
@@ -69,10 +79,10 @@ impl Dataset{
 		for (index,header) in headers.iter().enumerate(){
 			let unique_values = instances.iter()
 				.map(|record| record.get(index).unwrap())
-				.collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+				.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
 
 			
-			let mut current_onehot:Vec<_> = unique_values.clone().iter()
+			let mut current_onehot:Vec<_> = unique_values.iter()
 				.flat_map(|&value | 
 					instances.iter().map(move |i| if i.get(index).unwrap() == value {1}else{0}))
 				.collect();
@@ -85,6 +95,7 @@ impl Dataset{
 			
 		}
 
+		
 		
 		
 		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
@@ -115,7 +126,7 @@ impl Dataset{
 
 	pub fn mutual_info(&self,feature_a: &str, feature_b: &str) -> Option<f64>{
 
-		let sub_headers = &self.subheaders;
+		let sub_headers = self.get_subheaders();
 		let (sub_features_a,sub_features_b) =match (sub_headers.get(feature_a), sub_headers.get(feature_b)){
 			(Some(sub_features_a),Some(sub_features_b)) => (sub_features_a,sub_features_b),
 			_=> return None
@@ -148,6 +159,8 @@ impl Dataset{
 			*relevances.get_mut(feature).unwrap() = self.mutual_info(feature, "class").unwrap();
 		}
 
+		// TODO: Use binary heap to keep hightest score feature
+		
 		let most_relevant = relevances.iter()
 		.map(|(f,v)|(f.to_string(),*v))
 		.reduce(
@@ -174,13 +187,102 @@ impl Dataset{
 		return selected_features;
 	}
 
+	pub fn save(&self,path: &Path) ->Result<(), Box<dyn Error>>{
+		let content = serde_json::to_string(self).unwrap();
+		let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&path)?;
+		Ok(file.write_all(&content.as_bytes())?)
+	}
+
+	pub fn from(path: &Path) -> Result<Self, Box<dyn Error>>{
+        let mut file =  File::open(&path)?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+		return Ok(serde_json::from_str(&content)?);
+	}
+
+	pub fn merge(self,to_merge: Dataset) -> Self{
+
+		let instances = self.get_instances() + to_merge.get_instances();
+
+		let headers = self.get_headers().clone().into_iter()
+			.chain(to_merge.get_headers().clone().into_iter()).collect::<BTreeSet<_>>()
+			.into_iter().collect::<Vec<_>>();
+
+		let mut subheaders_map = HashMap::new();
+		let self_subheaders = self.get_subheaders();
+		let to_merge_subheaders = to_merge.get_subheaders();
+
+		for header in headers.iter(){
+			let vec = match (self_subheaders.get(header),to_merge_subheaders.get(header)){
+				(Some(a),Some(b)) =>{
+					a.clone().into_iter().chain(b.clone().into_iter())
+						.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>()
+				
+
+				},
+				(Some(a),None) => a.clone(),
+				(None,Some(b)) => b.clone(),
+				_=>vec![]
+			};
+			subheaders_map.insert(header.to_string(),vec);
+		}
+		let flat_subheaders  =headers.iter()
+			.flat_map(|header| subheaders_map.get(header).unwrap())
+			.collect::<Vec<_>>();
+
+
+		let positions = flat_subheaders.iter().enumerate()
+			.map(|(index,value)| (value.to_string(),index))
+			.collect::<HashMap<_,_>>();
+		
+		// let mut matrix = IMatrix::from_iter(flat_subheaders.len(),flat_subheaders.len(),
+		// for (i,sub_feature_a) in flat_subheaders.iter().enumerate(){
+		// 	for (j,sub_feature_b) in flat_subheaders.iter().enumerate(){
+		// 		let value  = 
+		// 		*matrix.get_mut((i,j)).unwrap()=value;
+		// 	}
+		// }
+		let subheaders_iter = flat_subheaders.iter().
+			flat_map(|subheader_a| flat_subheaders.iter().map(move |subheader_b| (subheader_a,subheader_b)))
+			.map(|(subheader_a,subheader_b)|{
+				self.intersection(subheader_a, subheader_b).unwrap_or(0)
+					+ to_merge.intersection(subheader_a, subheader_b).unwrap_or(0)
+			});
+		let num_subheaders = flat_subheaders.len();
+		let matrix = IMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
+
+
+		Dataset{
+			headers,
+			subheaders:subheaders_map,
+			positions,
+			instances,
+			matrix
+		}
+	}
+
+	pub fn merge_vec(self,to_merge_vec: Vec<Dataset>) -> Self{
+		let mut result = self;
+		for to_merge in to_merge_vec{
+			result = result.merge(to_merge)
+		};
+		return result;
+	}
+
+
 	pub fn get_headers(&self) -> &Vec<String>{
 		&self.headers
+	}
+	pub fn get_instances(&self) -> usize{
+		self.instances
 	}
 	pub fn get_matrix(&self) ->&IMatrix{
 		&self.matrix
 	}
 	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
 		&self.subheaders
+	}
+	pub fn get_header_values(&self,header:&str)->Option<&Vec<String>>{
+		self.get_subheaders().get(header)
 	}
 }
