@@ -204,25 +204,25 @@ impl Dataset{
 
 		let instances = self.get_instances() + to_merge.get_instances();
 
+		// BTreeSet does not preserve insertion order; it orders the string alphabetically
 		let headers = self.get_headers().clone().into_iter()
 			.chain(to_merge.get_headers().clone().into_iter()).collect::<BTreeSet<_>>()
 			.into_iter().collect::<Vec<_>>();
+
 
 		let mut subheaders_map = HashMap::new();
 		let self_subheaders = self.get_subheaders();
 		let to_merge_subheaders = to_merge.get_subheaders();
 
 		for header in headers.iter(){
-			let vec = match (self_subheaders.get(header),to_merge_subheaders.get(header)){
-				(Some(a),Some(b)) =>{
-					a.clone().into_iter().chain(b.clone().into_iter())
-						.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>()
+			let vec = {
+				let default = vec![];
+				let a = self_subheaders.get(header).unwrap_or(&default);
+				let b =to_merge_subheaders.get(header).unwrap_or(&default);
 				
-
-				},
-				(Some(a),None) => a.clone(),
-				(None,Some(b)) => b.clone(),
-				_=>vec![]
+				a.clone().into_iter().chain(b.clone().into_iter())
+					.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>()
+				
 			};
 			subheaders_map.insert(header.to_string(),vec);
 		}

@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	println!("{}",dataset.get_matrix());
 
 	// Save to disk
-	dataset.save(&PathBuf::from("dataset.serde"))?;
+	// dataset.save(&PathBuf::from("dataset.serde"))?;
 	
 	// Load from disk
 	let start_from_disk = Instant::now();
