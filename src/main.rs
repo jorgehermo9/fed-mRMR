@@ -14,28 +14,28 @@ fn main() -> Result<(), Box<dyn Error>>{
 	let dataset = Dataset::new(Reader::from_reader(io::stdin()))?;
 	let duration_matrix = start_matrix.elapsed();
 	
-	println!("Calculated dataset");
-	println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	println!("{}",dataset.get_matrix());
+	// println!("Calculated dataset");
+	// println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
+	// println!("{}",dataset.get_matrix());
 
 	// Save to disk
 	// dataset.save(&PathBuf::from("dataset.serde"))?;
 	
 	// Load from disk
-	let start_from_disk = Instant::now();
-	let dataset_disk = Dataset::from(&PathBuf::from("dataset.serde"))?;
-	let duration_from_disk = start_from_disk.elapsed();
-	println!("{:?}",dataset_disk.get_headers().iter().flat_map(|header| dataset_disk.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	println!("From disk dataset");
-	println!("{}",dataset_disk.get_matrix());
+	// let start_from_disk = Instant::now();
+	// let dataset_disk = Dataset::from(&PathBuf::from("dataset.serde"))?;
+	// let duration_from_disk = start_from_disk.elapsed();
+	// println!("{:?}",dataset_disk.get_headers().iter().flat_map(|header| dataset_disk.get_header_values(header).unwrap()).collect::<Vec<_>>());
+	// println!("From disk dataset");
+	// println!("{}",dataset_disk.get_matrix());
 
 
 	let start_merge = Instant::now();
-	let dataset = dataset.merge(dataset_disk);
+	// let dataset = dataset.merge(dataset_disk);
 	let duration_merge = start_merge.elapsed();
-	println!("Merged dataset");
-	println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	println!("{}",dataset.get_matrix());
+	// println!("Merged dataset");
+	// println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
+	// println!("{}",dataset.get_matrix());
 
 	
 
@@ -50,11 +50,11 @@ fn main() -> Result<(), Box<dyn Error>>{
 
 
 	println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
-	println!("Elapsed time for matrix loading from disk: {}s",duration_from_disk.as_secs_f32());
+	// println!("Elapsed time for matrix loading from disk: {}s",duration_from_disk.as_secs_f32());
 	println!("Elapsed time for matrix merge: {}s",duration_merge.as_secs_f32());
 
 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix+duration_merge+duration_from_disk).as_secs_f32());
+	// println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix+duration_merge+duration_from_disk).as_secs_f32());
 
 	Ok(())
 }
