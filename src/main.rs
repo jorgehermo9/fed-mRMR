@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	// let duration_from_disk = start_from_disk.elapsed();
 	// println!("{:?}",dataset_disk.get_headers().iter().flat_map(|header| dataset_disk.get_header_values(header).unwrap()).collect::<Vec<_>>());
 	// println!("From disk dataset");
-	// println!("{}",dataset_disk.get_matrix());
+	// println!("{:?}",dataset_disk.get_matrix());
 
 
 	let start_merge = Instant::now();
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	let duration_merge = start_merge.elapsed();
 	// println!("Merged dataset");
 	// println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	// println!("{}",dataset.get_matrix());
+	// println!("{:?}",dataset.get_matrix());
 
 	
 

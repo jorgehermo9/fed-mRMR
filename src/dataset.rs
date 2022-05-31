@@ -31,7 +31,7 @@ pub struct Dataset{
 	subheaders:HashMap<String,Vec<String>>,
 	positions:HashMap<String,usize>,
 	instances:usize,
-	matrix:CscMatrix<isize>
+	matrix:IMatrix
 }
 
 // Function to write onehotmatrix to binary file in graph format
@@ -103,11 +103,12 @@ impl Dataset{
 		
 		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
 		let sparse_matrix = CscMatrix::from(&matrix);
-		println!("sparse: total: {}, non-zero: {}",sparse_matrix.nrows()*sparse_matrix.ncols(),sparse_matrix.nnz());
+		println!("sparse -> total: {}, non-zero: {}",sparse_matrix.nrows()*sparse_matrix.ncols(),sparse_matrix.nnz());
 		//Intersection of features is the product of A' * A		
 		// let result = matrix.tr_mul(&matrix);
 		let result = sparse_matrix.transpose() * sparse_matrix;
-		println!("result: total: {}, non-zero: {}",result.nrows()*result.ncols(),result.nnz());
+		println!("result -> total: {}, non-zero: {}",result.nrows()*result.ncols(),result.nnz());
+		let result = IMatrix::from(&result);
 
 		let positions = sub_headers.iter().enumerate()
 			.map(|(index,value)| (value.to_string(),index))
@@ -123,13 +124,13 @@ impl Dataset{
 		})
 	}
 	pub fn intersection(&self, sub_feature_a: &str, sub_feature_b: &str)->Option<isize>{
-		let (row,col) = match (self.positions.get(sub_feature_a),self.positions.get(sub_feature_b)){
+		let cell = match (self.positions.get(sub_feature_a),self.positions.get(sub_feature_b)){
 			(Some(index_a),Some(index_b))=>(*index_a,*index_b),
 			_=>return None,
 		};
 
 		// return Some(self.matrix.column(a).dot(&self.matrix.column(b)));
-		return Some(self.matrix.get_entry(row,col).unwrap().into_value());
+		return self.matrix.get(cell).cloned();
 	}
 
 	pub fn mutual_info(&self,feature_a: &str, feature_b: &str) -> Option<f64>{
@@ -258,7 +259,7 @@ impl Dataset{
 			});
 		let num_subheaders = flat_subheaders.len();
 		let matrix = IMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
-		let matrix = CscMatrix::from(&matrix);
+		// let matrix = CscMatrix::from(&matrix);
 
 		Dataset{
 			headers,
@@ -284,7 +285,7 @@ impl Dataset{
 	pub fn get_instances(&self) -> usize{
 		self.instances
 	}
-	pub fn get_matrix(&self) ->&CscMatrix<isize>{
+	pub fn get_matrix(&self) ->&IMatrix{
 		&self.matrix
 	}
 	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
