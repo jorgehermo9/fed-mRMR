@@ -1,4 +1,3 @@
-extern crate nalgebra as na;
 use std::error::Error;
 use std::path::PathBuf;
 use std::time::Instant;
@@ -86,11 +85,11 @@ mod tests{
 		Ok(())
 	}
 
-	#[test]
-	fn test_connect_4()-> Result<(), Box<dyn Error>>{
-		calc_mrmr_dataset("test/datasets/connect-4.data")?;
-		Ok(())
-	}
+	// #[test]
+	// fn test_connect_4()-> Result<(), Box<dyn Error>>{
+	// 	calc_mrmr_dataset("test/datasets/connect-4.data")?;
+	// 	Ok(())
+	// }
 
 	#[test]
 	fn test_lung()-> Result<(), Box<dyn Error>>{

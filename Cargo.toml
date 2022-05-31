@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 csv = "1.1"
-nalgebra = {version = "0.30.1", features = ["serde-serialize"]}
+nalgebra = {version = "0.31.0", features = ["serde-serialize"]}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+nalgebra-sparse = {version = "0.7.0", features = ["serde-serialize"]}
