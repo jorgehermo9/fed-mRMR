@@ -27,6 +27,10 @@ Sparse -> 176.35s
 Dense -> 181.79s
 Sparse -> 341.87s
 
+### sparse multiplication and dense intersections
+construction -> 184s
+mrmr calc -> 180s
+
 # Info
 
 Hacer multiplicación en sparse
