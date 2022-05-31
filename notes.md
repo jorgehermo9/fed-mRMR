@@ -1,6 +1,6 @@
 # sparse vs dense
 
-## Aprox4.csv.disc
+## Aprox4.csv.disc (10 bins)
 
 Dataset con 122 características y 10 valores por característica. un 90% de las posiciones
 del bitmap tendrá valor 0.
@@ -27,9 +27,17 @@ Sparse -> 176.35s
 Dense -> 181.79s
 Sparse -> 341.87s
 
-### sparse multiplication and dense intersections
-construction -> 184s
-mrmr calc -> 180s
+## Letter recognition
+
+### Matrix construction
+Dense -> 1.34s
+Sparse -> 0.40s
+
+## credit card (10 bins)
+
+### Matrix construction
+Dense -> 15.12s
+Sparse -> 12.07s
 
 # Info
 
