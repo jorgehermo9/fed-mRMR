@@ -1,7 +1,6 @@
 extern crate nalgebra as na;
 
 use std::collections::BTreeSet;
-use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::error::Error;
 // use std::fs::File;
@@ -10,7 +9,6 @@ use std::error::Error;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
-use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use csv::Reader;
@@ -189,14 +187,13 @@ impl Dataset{
 			None => self.get_headers().len()-1
 		};
 		for _ in 0..num_features-1{
-			//update redudance of each feature compared to the last selected
-			for feature_info in mrmr_info_vec.iter_mut(){
-				feature_info.redundance += self.mutual_info(&feature_info.feature, &selected_features.last().unwrap().feature).unwrap();
-			};
 			
 			let mut max_value = f64::MIN;
 			let mut max_index = 0;
 			for (index,feature_info) in mrmr_info_vec.iter_mut().enumerate() {
+				//update redundance of feature compared to the last selected feature
+				feature_info.redundance += self.mutual_info(&feature_info.feature, &selected_features.last().unwrap().feature).unwrap();
+
 				let mrmr_value =  feature_info.relevance - feature_info.redundance/(selected_features.len() as f64);
 				feature_info.mrmr = mrmr_value;
 				//keep track of feature with maximum mrmr value
@@ -212,32 +209,56 @@ impl Dataset{
 		return selected_features.into_iter().map(|feature_info| (feature_info.feature,feature_info.mrmr)).collect::<Vec<_>>();
 	}
 
-	pub fn save(&self,path: &Path) ->Result<(), Box<dyn Error>>{
+	pub fn save<P: Sized +AsRef<Path>> (&self,path: P) ->Result<(), Box<dyn Error>>{
 		let content = serde_json::to_string(self).unwrap();
 		let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&path)?;
 		Ok(file.write_all(&content.as_bytes())?)
 	}
 
-	pub fn from(path: &Path) -> Result<Self, Box<dyn Error>>{
-        let mut file =  File::open(&path)?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
-		return Ok(serde_json::from_str(&content)?);
+	pub fn from_path<P: Sized +AsRef<Path>> (path: P) -> Result<Self,Box<dyn Error>> {
+		let file =  File::open(&path)?;
+		return Self::from_reader(&mut io::BufReader::new(file))
 	}
+	pub fn from_reader(reader: &mut dyn io::Read) -> Result<Self,Box<dyn Error>>{
+		let mut buff = String::new();
+		reader.read_to_string(&mut buff)?;
+		return Ok(serde_json::from_str(&buff)?);
+	}
+	
 
-	pub fn merge(self,to_merge: Dataset) -> Self{
+	pub fn get_headers(&self) -> &Vec<String>{
+		&self.headers
+	}
+	pub fn get_instances(&self) -> usize{
+		self.instances
+	}
+	pub fn get_matrix(&self) ->&IMatrix{
+		&self.matrix
+	}
+	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
+		&self.subheaders
+	}
+	pub fn get_header_values(&self,header:&str)->Option<&Vec<String>>{
+		self.get_subheaders().get(header)
+	}
+}
 
-		let instances = self.get_instances() + to_merge.get_instances();
+pub trait Merge<T>{
+	fn merge(self,other:T) -> Self;
+}
+impl Merge<Dataset> for Dataset{
+	fn merge(self,other:Dataset) ->Self{
+		let instances = self.get_instances() + other.get_instances();
 
 		// BTreeSet does not preserve insertion order; it orders the string alphabetically
 		let headers = self.get_headers().clone().into_iter()
-			.chain(to_merge.get_headers().clone().into_iter()).collect::<BTreeSet<_>>()
+			.chain(other.get_headers().clone().into_iter()).collect::<BTreeSet<_>>()
 			.into_iter().collect::<Vec<_>>();
 
 
 		let mut subheaders_map = HashMap::new();
 		let self_subheaders = self.get_subheaders();
-		let to_merge_subheaders = to_merge.get_subheaders();
+		let to_merge_subheaders = other.get_subheaders();
 
 		for header in headers.iter(){
 			let vec = {
@@ -260,18 +281,12 @@ impl Dataset{
 			.map(|(index,value)| (value.to_string(),index))
 			.collect::<HashMap<_,_>>();
 		
-		// let mut matrix = IMatrix::from_iter(flat_subheaders.len(),flat_subheaders.len(),
-		// for (i,sub_feature_a) in flat_subheaders.iter().enumerate(){
-		// 	for (j,sub_feature_b) in flat_subheaders.iter().enumerate(){
-		// 		let value  = 
-		// 		*matrix.get_mut((i,j)).unwrap()=value;
-		// 	}
-		// }
+
 		let subheaders_iter = flat_subheaders.iter().
 			flat_map(|subheader_a| flat_subheaders.iter().map(move |subheader_b| (subheader_a,subheader_b)))
 			.map(|(subheader_a,subheader_b)|{
 				self.intersection(subheader_a, subheader_b).unwrap_or(0)
-					+ to_merge.intersection(subheader_a, subheader_b).unwrap_or(0)
+					+ other.intersection(subheader_a, subheader_b).unwrap_or(0)
 			});
 		let num_subheaders = flat_subheaders.len();
 		let matrix = IMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
@@ -285,29 +300,54 @@ impl Dataset{
 			matrix
 		}
 	}
-
-	pub fn merge_vec(self,to_merge_vec: Vec<Dataset>) -> Self{
+}
+impl Merge<Vec<Dataset>> for Dataset{
+	fn merge(self,other:Vec<Dataset>) -> Dataset{
 		let mut result = self;
-		for to_merge in to_merge_vec{
+		for to_merge in other{
 			result = result.merge(to_merge)
 		};
 		return result;
 	}
+}
 
 
-	pub fn get_headers(&self) -> &Vec<String>{
-		&self.headers
+#[cfg(test)]
+mod tests{
+	use super::*;
+	use std::{error::Error, time::Instant};
+
+	fn calc_mrmr_dataset(dataset_path: &str)-> Result<(),Box<dyn Error>>{
+
+		let start_matrix = Instant::now();
+		let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
+
+		let duration_matrix = start_matrix.elapsed();
+		let start_mrmr = Instant::now();
+		let _ = dataset.mrmr_features("class",None);
+		let duration_mrmr = start_mrmr.elapsed();
+		println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
+		println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
+		println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
+		
+		Ok(())
 	}
-	pub fn get_instances(&self) -> usize{
-		self.instances
+
+	#[test]
+	fn test_iris()-> Result<(), Box<dyn Error>>{
+		calc_mrmr_dataset("test/datasets/iris.data.disc")?;
+		Ok(())
 	}
-	pub fn get_matrix(&self) ->&IMatrix{
-		&self.matrix
-	}
-	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
-		&self.subheaders
-	}
-	pub fn get_header_values(&self,header:&str)->Option<&Vec<String>>{
-		self.get_subheaders().get(header)
+
+	// #[test]
+	// fn test_connect_4()-> Result<(), Box<dyn Error>>{
+	// 	calc_mrmr_dataset("test/datasets/connect-4.data")?;
+	// 	Ok(())
+	// }
+
+	#[test]
+	fn test_lung()-> Result<(), Box<dyn Error>>{
+		calc_mrmr_dataset("test/datasets/test_lung_s3.csv")?;
+		Ok(())
 	}
 }

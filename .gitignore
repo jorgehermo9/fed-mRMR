@@ -1,4 +1,4 @@
 target/
-test/
+datasets/
 graphs/
-*.serde
+*.mrmr
