@@ -1,5 +1,4 @@
 use std::error::Error;
-use std::path::PathBuf;
 use std::time::Instant;
 use std::io;
 use csv::Reader;
@@ -40,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 
 	let start_mrmr = Instant::now();
 
-	let selected_features = dataset.mrmr_features();
+	let selected_features = dataset.mrmr_features("class",None);
 	for (index,(feature,value)) in selected_features.into_iter().enumerate(){
 		if feature == "class"{continue}
 		println!("{}. {} -> {}",index+1,feature,value);
@@ -53,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 	println!("Elapsed time for matrix merge: {}s",duration_merge.as_secs_f32());
 
 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-	// println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix+duration_merge+duration_from_disk).as_secs_f32());
+	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix+duration_merge).as_secs_f32());
 
 	Ok(())
 }
@@ -70,7 +69,7 @@ mod tests{
 
 		let duration_matrix = start_matrix.elapsed();
 		let start_mrmr = Instant::now();
-		let _ = dataset.mrmr_features();
+		let _ = dataset.mrmr_features("class",None);
 		let duration_mrmr = start_mrmr.elapsed();
 		println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
 		println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());

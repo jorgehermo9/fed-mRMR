@@ -1,6 +1,7 @@
 extern crate nalgebra as na;
 
 use std::collections::BTreeSet;
+use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::error::Error;
 // use std::fs::File;
@@ -16,7 +17,6 @@ use csv::Reader;
 
 use na::{Dynamic, OMatrix};
 use nalgebra_sparse::csc::CscMatrix;
-
 use serde::{Serialize, Deserialize};
 
 
@@ -34,6 +34,13 @@ pub struct Dataset{
 	matrix:IMatrix
 }
 
+#[derive(Debug)]
+struct MrmrInfo{
+	relevance:f64,
+	redundance:f64,
+	mrmr:f64,
+	feature:String
+}
 // Function to write onehotmatrix to binary file in graph format
 // fn write_one_hot(matrix: &IMatrix,subheaders:&Vec<String>){
 
@@ -85,29 +92,21 @@ impl Dataset{
 				.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
 
 			
-			let mut current_onehot:Vec<_> = unique_values.iter()
+			let current_onehot:Vec<_> = unique_values.iter()
 				.flat_map(|&value | 
 					instances.iter().map(move |i| if i.get(index).unwrap() == value {1}else{0}))
 				.collect();
 			
-			onehot.append(&mut current_onehot);
-
+			onehot.extend(current_onehot.into_iter());
 			sub_headers.extend(unique_values.iter().map(|subheader|format!("{header}_{subheader}")));
-
 			sub_headers_map.insert(header.to_string(),unique_values.iter().map(|subheader|format!("{header}_{subheader}")).collect());
 			
 		}
-
-		
-		
 		
 		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
 		let sparse_matrix = CscMatrix::from(&matrix);
-		println!("sparse -> total: {}, non-zero: {}",sparse_matrix.nrows()*sparse_matrix.ncols(),sparse_matrix.nnz());
 		//Intersection of features is the product of A' * A		
-		// let result = matrix.tr_mul(&matrix);
 		let result = sparse_matrix.transpose() * sparse_matrix;
-		println!("result -> total: {}, non-zero: {}",result.nrows()*result.ncols(),result.nnz());
 		let result = IMatrix::from(&result);
 
 		let positions = sub_headers.iter().enumerate()
@@ -128,8 +127,6 @@ impl Dataset{
 			(Some(index_a),Some(index_b))=>(*index_a,*index_b),
 			_=>return None,
 		};
-
-		// return Some(self.matrix.column(a).dot(&self.matrix.column(b)));
 		return self.matrix.get(cell).cloned();
 	}
 
@@ -158,42 +155,61 @@ impl Dataset{
 		return Some(m_info);
 	}
 
-	pub fn mrmr_features(&self)->Vec<(String,f64)>{
-		let features = self.get_headers().clone().into_iter().filter(|f| f!="class").collect::<Vec<_>>();
+	pub fn mrmr_features(&self,class:&str,limit:Option<usize>)->Vec<(String,f64)>{
+		//Dont return most relevant if num_features is 0
+		if limit == Some(0){
+			return vec![]
+		};
 		
-		let mut relevances =features.iter().map(|f|(f.to_string(),0.0)).collect::<HashMap<_,_>>();
-		let mut redundances =features.iter().map(|f|(f.to_string(),0.0)).collect::<HashMap<_,_>>();
-
-		for feature in features.iter() {
-			*relevances.get_mut(feature).unwrap() = self.mutual_info(feature, "class").unwrap();
+		let features = self.get_headers().iter().filter(|f| *f!=class);
+		
+		let mut mrmr_info_vec = Vec::new();
+		
+		let mut max_mi = f64::MIN;
+		let mut max_index = 0;
+		for (index,feature) in features.enumerate() {
+			let mi = self.mutual_info(feature,class).unwrap();
+			if mi > max_mi{
+				max_mi = mi;
+				max_index =index; 
+			}
+			mrmr_info_vec.push(MrmrInfo{
+				relevance:mi,
+				redundance:0.0_f64,
+				mrmr:mi,
+				feature:feature.to_string()
+			});
 		}
 
-		// TODO: Use binary heap to keep hightest score feature
-		
-		let most_relevant = relevances.iter()
-		.map(|(f,v)|(f.to_string(),*v))
-		.reduce(
-			|(acc,acc_val),(item,item_val)| if item_val > acc_val {(item,item_val)}else{(acc,acc_val)}).unwrap();
-		
+		let most_relevant = mrmr_info_vec.swap_remove(max_index);
 		let mut selected_features = vec![most_relevant];
-		let mut remaining_features = features.clone().into_iter().filter(|f| f!=&selected_features.last().unwrap().0).collect::<Vec<_>>();
 
-
-		while !remaining_features.is_empty(){
-
-			for feature in remaining_features.iter(){
-				*redundances.get_mut(feature).unwrap()+= self.mutual_info(feature, &selected_features.last().unwrap().0).unwrap();
+		let num_features = match limit{
+			Some(n) =>n,
+			None => self.get_headers().len()-1
+		};
+		for _ in 0..num_features-1{
+			//update redudance of each feature compared to the last selected
+			for feature_info in mrmr_info_vec.iter_mut(){
+				feature_info.redundance += self.mutual_info(&feature_info.feature, &selected_features.last().unwrap().feature).unwrap();
 			};
-			let most_mrmr = remaining_features.iter()
-			.map(|f|(f.to_string(),relevances[f] - (redundances[f]/selected_features.len() as f64)))
-			.reduce(
-				|(acc,acc_val),(item,item_val)| if item_val > acc_val {(item,item_val)}else{(acc,acc_val)}).unwrap();
 			
-			remaining_features = remaining_features.into_iter().filter(|f| f!=&most_mrmr.0).collect::<Vec<_>>();
+			let mut max_value = f64::MIN;
+			let mut max_index = 0;
+			for (index,feature_info) in mrmr_info_vec.iter_mut().enumerate() {
+				let mrmr_value =  feature_info.relevance - feature_info.redundance/(selected_features.len() as f64);
+				feature_info.mrmr = mrmr_value;
+				//keep track of feature with maximum mrmr value
+				if mrmr_value > max_value{
+					max_value = mrmr_value;
+					max_index = index;
+				}
+			}
+			let most_mrmr = mrmr_info_vec.swap_remove(max_index);
 			selected_features.push(most_mrmr);
 		}
 
-		return selected_features;
+		return selected_features.into_iter().map(|feature_info| (feature_info.feature,feature_info.mrmr)).collect::<Vec<_>>();
 	}
 
 	pub fn save(&self,path: &Path) ->Result<(), Box<dyn Error>>{

@@ -8,8 +8,8 @@ del bitmap tendrá valor 0.
 Multiplicación de matrices sparse, más rápida que la dense?
 
 ### Matrix construction
-Dense -> 5.6s 
-Sparse -> 1.74s
+Dense -> 8.2s 
+Sparse -> 2.62s
 
 ## Connect4
 ### Matrix construction
