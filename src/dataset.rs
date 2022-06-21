@@ -94,7 +94,6 @@ impl Dataset{
 				.flat_map(|&value | 
 					instances.iter().map(move |i| if i.get(index).unwrap() == value {1}else{0}))
 				.collect();
-			
 			onehot.extend(current_onehot.into_iter());
 			sub_headers.extend(unique_values.iter().map(|subheader|format!("{header}_{subheader}")));
 			sub_headers_map.insert(header.to_string(),unique_values.iter().map(|subheader|format!("{header}_{subheader}")).collect());
@@ -182,9 +181,10 @@ impl Dataset{
 		let most_relevant = mrmr_info_vec.swap_remove(max_index);
 		let mut selected_features = vec![most_relevant];
 
+		let max_num_features = self.get_headers().len()-1;
 		let num_features = match limit{
-			Some(n) =>n,
-			None => self.get_headers().len()-1
+			Some(n) =>if n > max_num_features {max_num_features} else {n},
+			None => max_num_features
 		};
 		for _ in 0..num_features-1{
 			

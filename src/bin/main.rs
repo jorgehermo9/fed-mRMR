@@ -120,12 +120,16 @@ fn show(path:&Option<PathBuf>) -> Result<(),Box<dyn Error>> {
 
 	let features = dataset.get_headers();
 	let sub_features = dataset.get_subheaders();
+	let mut num_subfeatures =0;
 	for feature in features{
 		for sub_feature in sub_features.get(feature).unwrap(){
 			print!("{sub_feature} ");
+			num_subfeatures+=1;
 		}
-		println!();
 	}
+	println!();
+	println!("\n{num_subfeatures} sub_features");
+	println!("{} instances",dataset.get_instances());
 	let matrix = dataset.get_matrix();
 	println!("{matrix}");
 	Ok(())
