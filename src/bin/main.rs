@@ -20,13 +20,39 @@ enum Commands{
 		/// read file from provided path. If none is provided, file is read from stdin
 		path:Option<PathBuf>,
 		/// flag to try to parse input file as csv format
-		#[clap(short,long,action)]
+		#[clap(long)]
 		csv:bool,
+		//specifiy class feature name
+		#[clap(short,long)]
+		class:String,
+		/// max number of features to select
+		#[clap(short,long)]
+		num_features:Option<usize>,
+	},
+	Matrix{
+		/// read file from provided path. If none is provided, file is read from stdin
+		path:Option<PathBuf>,
+		/// path to write matrix
+		#[clap(short,long)]
+		output:PathBuf,
+	},
+	Merge{
+		/// datasets to merge
+		#[clap(required=true,min_values=2)]
+		datasets:Vec<PathBuf>,
+
+		/// path to write matrix
+		#[clap(short,long)]
+		output:PathBuf,
+	},
+	Show{
+		/// read file from provided path. If none is provided, file is read from stdin
+		path:Option<PathBuf>,
 	}
 }
 
-fn mrmr(path:&Option<PathBuf>,csv:bool)-> Result<(),Box<dyn Error>>{
-	let mut reader:Box<dyn BufRead> = match path{
+fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>)-> Result<(),Box<dyn Error>>{
+	let reader:Box<dyn BufRead> = match path{
 		Some(path) =>Box::new(BufReader::new(fs::File::open(path)?)),
 		None=>Box::new(BufReader::new(io::stdin()))
 	};
@@ -39,67 +65,80 @@ fn mrmr(path:&Option<PathBuf>,csv:bool)-> Result<(),Box<dyn Error>>{
 
 		dataset
 	}else{
-		Dataset::from_reader(&mut reader)?
+		Dataset::from_reader(reader)?
 	};
 
 	let start_mrmr = Instant::now();
-	let selected_features = dataset.mrmr_features("class",None);
+	let selected_features = dataset.mrmr_features(class,limit.clone());
+
+	let feature_padding = dataset.get_headers().iter().map(|s|s.len()).max().unwrap();
+	let rank_padding = (selected_features.len() as f32).log10() as usize +2;
 	for (index,(feature,value)) in selected_features.into_iter().enumerate(){
-		if feature == "class"{continue}
-		println!("{}. {} -> {}",index+1,feature,value);
+		if feature == *class{continue}
+		let rank = format!("{}.",index+1);
+		println!("{rank:<rank_padding$} {feature:<feature_padding$} -> {value:.6}");
 	}
 	let duration_mrmr = start_mrmr.elapsed();
 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
+	
+	Ok(())
+}
+
+fn matrix(path:&Option<PathBuf>,output:&PathBuf) -> Result<(),Box<dyn Error>>{
+	let reader:Box<dyn BufRead> = match path{
+		Some(path) =>Box::new(BufReader::new(fs::File::open(path)?)),
+		None=>Box::new(BufReader::new(io::stdin()))
+	};
+	let dataset = Dataset::new(Reader::from_reader(reader))?;
+	dataset.save(output)?;
+	println!("Matrix saved to {}",output.display());
 
 	Ok(())
 }
+
+fn merge(datasets:&Vec<PathBuf>,output:&PathBuf) -> Result<(),Box<dyn Error>> {
+
+	let mut paths = datasets.iter();
+	let first_path = paths.next().unwrap();
+	let mut result = Dataset::from_path(first_path)?;
+	for path in paths{
+		let dataset =  Dataset::from_path(path)?;
+		result = result.merge(dataset);
+	}
+	result.save(output)?;
+	println!("Merged dataset matrix saved to {}",output.display());
+
+	Ok(())
+}
+
+fn show(path:&Option<PathBuf>) -> Result<(),Box<dyn Error>> {
+	let reader:Box<dyn BufRead> = match path{
+		Some(path) =>Box::new(BufReader::new(fs::File::open(path)?)),
+		None=>Box::new(BufReader::new(io::stdin()))
+	};
+	let dataset =  Dataset::from_reader(reader)?;
+
+	let features = dataset.get_headers();
+	let sub_features = dataset.get_subheaders();
+	for feature in features{
+		for sub_feature in sub_features.get(feature).unwrap(){
+			print!("{sub_feature} ");
+		}
+		println!();
+	}
+	let matrix = dataset.get_matrix();
+	println!("{matrix}");
+	Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>>{
 	let cli = Cli::parse();
 	match &cli.command{
-		Commands::Mrmr{path,csv}=>mrmr(path,*csv)?
+		Commands::Mrmr{path,csv,class,num_features}=>mrmr(path,*csv,class,num_features)?,
+		Commands::Matrix{path,output} => matrix(path,output)?,
+		Commands::Merge{datasets,output} => merge(datasets,output)?,
+		Commands::Show{path} => show(path)?,
 	};
-	
-	// println!("Calculated dataset");
-	// println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	// println!("{}",dataset.get_matrix());
-
-	// Save to disk
-	// dataset.save("dataset.mrmr")?;
-	
-	// Load from disk
-	// let start_from_disk = Instant::now();
-	// let dataset_disk = Dataset::try_from("dataset.mrmr")?;
-	// let duration_from_disk = start_from_disk.elapsed();
-	// println!("{:?}",dataset_disk.get_headers().iter().flat_map(|header| dataset_disk.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	// println!("From disk dataset");
-	// println!("{:?}",dataset_disk.get_matrix());
-
-
-	// let start_merge = Instant::now();
-	// let dataset = dataset.merge(dataset_disk);
-	// let duration_merge = start_merge.elapsed();
-	// // println!("Merged dataset");
-	// // println!("{:?}",dataset.get_headers().iter().flat_map(|header| dataset.get_header_values(header).unwrap()).collect::<Vec<_>>());
-	// // println!("{:?}",dataset.get_matrix());
-
-	
-
-	// let start_mrmr = Instant::now();
-
-	// let selected_features = dataset.mrmr_features("class",None);
-	// for (index,(feature,value)) in selected_features.into_iter().enumerate(){
-	// 	if feature == "class"{continue}
-	// 	println!("{}. {} -> {}",index+1,feature,value);
-	// }
-	// let duration_mrmr = start_mrmr.elapsed();
-
-
-	// println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
-	// // println!("Elapsed time for matrix loading from disk: {}s",duration_from_disk.as_secs_f32());
-	// println!("Elapsed time for matrix merge: {}s",duration_merge.as_secs_f32());
-
-	// println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-	// println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix+duration_merge).as_secs_f32());
 
 	Ok(())
 }

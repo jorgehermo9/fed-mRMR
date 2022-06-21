@@ -219,7 +219,7 @@ impl Dataset{
 		let file =  File::open(&path)?;
 		return Self::from_reader(&mut io::BufReader::new(file))
 	}
-	pub fn from_reader(reader: &mut dyn io::Read) -> Result<Self,Box<dyn Error>>{
+	pub fn from_reader<T:io::Read>(mut reader: T) -> Result<Self,Box<dyn Error>>{
 		let mut buff = String::new();
 		reader.read_to_string(&mut buff)?;
 		return Ok(serde_json::from_str(&buff)?);
