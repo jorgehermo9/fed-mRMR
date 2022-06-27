@@ -315,39 +315,69 @@ impl Merge<Vec<Dataset>> for Dataset{
 #[cfg(test)]
 mod tests{
 	use super::*;
-	use std::{error::Error, time::Instant};
-
-	fn calc_mrmr_dataset(dataset_path: &str)-> Result<(),Box<dyn Error>>{
-
-		let start_matrix = Instant::now();
-		let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
-
-		let duration_matrix = start_matrix.elapsed();
-		let start_mrmr = Instant::now();
-		let _ = dataset.mrmr_features("class",None);
-		let duration_mrmr = start_mrmr.elapsed();
-		println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
-		println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-		println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
-		
-		Ok(())
-	}
 
 	#[test]
-	fn test_iris()-> Result<(), Box<dyn Error>>{
-		calc_mrmr_dataset("test/datasets/iris.data.disc")?;
+	fn merge_datasets_synthetic()-> Result<(), Box<dyn Error>>{
+		let complete = Dataset::new(Reader::from_path("datasets/dataset.csv")?)?;
+		let partial_1 = Dataset::new(Reader::from_path("datasets/dataset-1.csv")?)?;
+		let partial_2 = Dataset::new(Reader::from_path("datasets/dataset-2.csv")?)?;
+
+		let merged = partial_1.merge(partial_2);
+		let complete_rank = complete.mrmr_features("class", None);
+		let merged_rank = merged.mrmr_features("class", None);
+
+		assert_eq!(merged_rank,complete_rank);
+
 		Ok(())
 	}
+	
+	#[test]
+	fn merge_datasets_microarray()-> Result<(), Box<dyn Error>>{
+		let complete = Dataset::new(Reader::from_path("datasets/test_lung_s3.csv")?)?;
+		let partial_1 = Dataset::new(Reader::from_path("datasets/test_lung_s3-1.csv")?)?;
+		let partial_2 = Dataset::new(Reader::from_path("datasets/test_lung_s3-2.csv")?)?;
 
-	// #[test]
-	// fn test_connect_4()-> Result<(), Box<dyn Error>>{
-	// 	calc_mrmr_dataset("test/datasets/connect-4.data")?;
+		let merged = partial_1.merge(partial_2);
+		let complete_rank = complete.mrmr_features("class", None);
+		let merged_rank = merged.mrmr_features("class", None);
+
+		assert_eq!(merged_rank,complete_rank);
+
+		Ok(())
+	}
+	// use std::{error::Error, time::Instant};
+
+	// fn calc_mrmr_dataset(dataset_path: &str)-> Result<(),Box<dyn Error>>{
+
+	// 	let start_matrix = Instant::now();
+	// 	let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
+
+	// 	let duration_matrix = start_matrix.elapsed();
+	// 	let start_mrmr = Instant::now();
+	// 	let _ = dataset.mrmr_features("class",None);
+	// 	let duration_mrmr = start_mrmr.elapsed();
+	// 	println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
+	// 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
+	// 	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
+		
 	// 	Ok(())
 	// }
 
-	#[test]
-	fn test_lung()-> Result<(), Box<dyn Error>>{
-		calc_mrmr_dataset("test/datasets/test_lung_s3.csv")?;
-		Ok(())
-	}
+	// #[test]
+	// fn test_iris()-> Result<(), Box<dyn Error>>{
+	// 	calc_mrmr_dataset("test/datasets/iris.data.disc")?;
+	// 	Ok(())
+	// }
+
+	// // #[test]
+	// // fn test_connect_4()-> Result<(), Box<dyn Error>>{
+	// // 	calc_mrmr_dataset("test/datasets/connect-4.data")?;
+	// // 	Ok(())
+	// // }
+
+	// #[test]
+	// fn test_lung()-> Result<(), Box<dyn Error>>{
+	// 	calc_mrmr_dataset("test/datasets/test_lung_s3.csv")?;
+	// 	Ok(())
+	// }
 }
