@@ -318,9 +318,9 @@ mod tests{
 
 	#[test]
 	fn merge_datasets_synthetic()-> Result<(), Box<dyn Error>>{
-		let complete = Dataset::new(Reader::from_path("datasets/dataset.csv")?)?;
-		let partial_1 = Dataset::new(Reader::from_path("datasets/dataset-1.csv")?)?;
-		let partial_2 = Dataset::new(Reader::from_path("datasets/dataset-2.csv")?)?;
+		let complete = Dataset::new(Reader::from_path("test/assets/dataset.csv")?)?;
+		let partial_1 = Dataset::new(Reader::from_path("test/assets/dataset-1.csv")?)?;
+		let partial_2 = Dataset::new(Reader::from_path("test/assets/dataset-2.csv")?)?;
 
 		let merged = partial_1.merge(partial_2);
 		let complete_rank = complete.mrmr_features("class", None);
@@ -330,12 +330,12 @@ mod tests{
 
 		Ok(())
 	}
-	
+
 	#[test]
 	fn merge_datasets_microarray()-> Result<(), Box<dyn Error>>{
-		let complete = Dataset::new(Reader::from_path("datasets/test_lung_s3.csv")?)?;
-		let partial_1 = Dataset::new(Reader::from_path("datasets/test_lung_s3-1.csv")?)?;
-		let partial_2 = Dataset::new(Reader::from_path("datasets/test_lung_s3-2.csv")?)?;
+		let complete = Dataset::new(Reader::from_path("test/assets/test_lung_s3.csv")?)?;
+		let partial_1 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-1.csv")?)?;
+		let partial_2 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-2.csv")?)?;
 
 		let merged = partial_1.merge(partial_2);
 		let complete_rank = complete.mrmr_features("class", None);

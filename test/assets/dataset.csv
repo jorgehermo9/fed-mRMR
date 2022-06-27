@@ -1,0 +1,9 @@
+fuma,transporte,class
+si,coche,a
+si,coche,a
+si,coche,b
+no,coche,b
+no,autobus,a
+si,autobus,a
+no,coche,b
+si,coche,b
