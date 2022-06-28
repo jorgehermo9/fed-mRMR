@@ -3,8 +3,6 @@ extern crate nalgebra as na;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::error::Error;
-// use std::fs::File;
-// use std::io::Write;
 
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -13,14 +11,9 @@ use std::io::Write;
 use std::path::Path;
 use csv::Reader;
 
-use na::{Dynamic, OMatrix};
+use na::DMatrix;
 use nalgebra_sparse::csc::CscMatrix;
 use serde::{Serialize, Deserialize};
-
-
-
-type IMatrix = OMatrix<isize, Dynamic, Dynamic>;
-
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -29,7 +22,7 @@ pub struct Dataset{
 	subheaders:HashMap<String,Vec<String>>,
 	positions:HashMap<String,usize>,
 	instances:usize,
-	matrix:IMatrix
+	matrix:DMatrix<isize>
 }
 
 #[derive(Debug)]
@@ -83,28 +76,37 @@ impl Dataset{
 
 		let mut sub_headers = vec![];
 		let mut sub_headers_map = HashMap::new();
-		let mut onehot = vec![];
+		let mut data = vec![];
+		let mut col_offsets=vec![0];
+		let mut row_indexes = vec![];
+
 		for (index,header) in headers.iter().enumerate(){
 			let unique_values = instances.iter()
 				.map(|record| record.get(index).unwrap())
-				.collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
+				.collect::<BTreeSet<_>>();
+				// .into_iter().collect::<Vec<_>>();
 
+			for value in unique_values.iter(){
+				for (j,instance) in instances.iter().enumerate(){
+					if instance.get(index).unwrap() == *value{
+						data.push(1);
+						row_indexes.push(j);
+					}
+				}
+				col_offsets.push(row_indexes.len())
+			}
 			
-			let current_onehot:Vec<_> = unique_values.iter()
-				.flat_map(|&value | 
-					instances.iter().map(move |i| if i.get(index).unwrap() == value {1}else{0}))
-				.collect();
-			onehot.extend(current_onehot.into_iter());
+
 			sub_headers.extend(unique_values.iter().map(|subheader|format!("{header}_{subheader}")));
 			sub_headers_map.insert(header.to_string(),unique_values.iter().map(|subheader|format!("{header}_{subheader}")).collect());
 			
 		}
-		
-		let matrix = IMatrix::from_vec(instances.len(),sub_headers.len(),onehot);
-		let sparse_matrix = CscMatrix::from(&matrix);
-		//Intersection of features is the product of A' * A		
+		let sparse_matrix = CscMatrix::try_from_csc_data(
+			instances.len(), sub_headers.len(), col_offsets, row_indexes, data)
+			.expect("Could not create sparse matrix: Invalid csc data");
+
 		let result = sparse_matrix.transpose() * sparse_matrix;
-		let result = IMatrix::from(&result);
+		let result = DMatrix::from(&result);
 
 		let positions = sub_headers.iter().enumerate()
 			.map(|(index,value)| (value.to_string(),index))
@@ -232,7 +234,7 @@ impl Dataset{
 	pub fn get_instances(&self) -> usize{
 		self.instances
 	}
-	pub fn get_matrix(&self) ->&IMatrix{
+	pub fn get_matrix(&self) ->&DMatrix<isize>{
 		&self.matrix
 	}
 	pub fn get_subheaders(&self) ->&HashMap<String,Vec<String>>{
@@ -289,7 +291,7 @@ impl Merge<Dataset> for Dataset{
 					+ other.intersection(subheader_a, subheader_b).unwrap_or(0)
 			});
 		let num_subheaders = flat_subheaders.len();
-		let matrix = IMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
+		let matrix = DMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
 		// let matrix = CscMatrix::from(&matrix);
 
 		Dataset{

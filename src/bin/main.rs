@@ -22,12 +22,16 @@ enum Commands{
 		/// flag to try to parse input file as csv format
 		#[clap(long)]
 		csv:bool,
-		//specifiy class feature name
+		/// specifiy class feature name of the dataset
 		#[clap(short,long)]
 		class:String,
 		/// max number of features to select
 		#[clap(short,long)]
 		num_features:Option<usize>,
+
+		/// display more output info. -v for ranking order info and -vv for ranking values and computation times
+		#[clap(short, long, action = clap::ArgAction::Count)]
+		verbose: u8,
 	},
 	Matrix{
 		/// read file from provided path. If none is provided, file is read from stdin
@@ -51,7 +55,7 @@ enum Commands{
 	}
 }
 
-fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>)-> Result<(),Box<dyn Error>>{
+fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>,verbose:u8) -> Result<(),Box<dyn Error>>{
 	let reader:Box<dyn BufRead> = match path{
 		Some(path) =>Box::new(BufReader::new(fs::File::open(path)?)),
 		None=>Box::new(BufReader::new(io::stdin()))
@@ -60,9 +64,10 @@ fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>)-> Res
 		//If csv flag specified and no path is provided, read csv from stdin
 		let start_matrix = Instant::now();
 		let dataset = Dataset::new(Reader::from_reader(reader))?;
-		let duration_matrix = start_matrix.elapsed();
-		println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());		
-
+		if verbose >=2{
+			let duration_matrix = start_matrix.elapsed();
+			println!("Elapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());		
+		}
 		dataset
 	}else{
 		Dataset::from_reader(reader)?
@@ -72,14 +77,26 @@ fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>)-> Res
 	let selected_features = dataset.mrmr_features(class,limit.clone());
 
 	let feature_padding = dataset.get_headers().iter().map(|s|s.len()).max().unwrap();
+	//+2 because dot and first digit
 	let rank_padding = (selected_features.len() as f32).log10() as usize +2;
 	for (index,(feature,value)) in selected_features.into_iter().enumerate(){
-		if feature == *class{continue}
-		let rank = format!("{}.",index+1);
-		println!("{rank:<rank_padding$} {feature:<feature_padding$} -> {value:.6}");
+		if verbose == 0{
+			print!("{feature} ")
+		}else if verbose == 1{
+			let rank = format!("{}.",index+1);
+			println!("{rank:<rank_padding$} {feature:<feature_padding$}");
+		}else if verbose >= 2{
+			let rank = format!("{}.",index+1);
+			println!("{rank:<rank_padding$} {feature:<feature_padding$} -> {value:.6}");
+		}
 	}
-	let duration_mrmr = start_mrmr.elapsed();
-	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
+	if verbose ==0{
+		println!();
+	}else if verbose >=2{
+		let duration_mrmr = start_mrmr.elapsed();
+		println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
+	}
+
 	
 	Ok(())
 }
@@ -119,26 +136,26 @@ fn show(path:&Option<PathBuf>) -> Result<(),Box<dyn Error>> {
 	let dataset =  Dataset::from_reader(reader)?;
 
 	let features = dataset.get_headers();
-	let sub_features = dataset.get_subheaders();
-	let mut num_subfeatures =0;
-	for feature in features{
-		for sub_feature in sub_features.get(feature).unwrap(){
-			print!("{sub_feature} ");
-			num_subfeatures+=1;
-		}
+	let sub_features_map = dataset.get_subheaders();
+	let flat_sub_features = features.into_iter().flat_map(|feature| sub_features_map.get(feature).unwrap());
+	println!("{} sub_features, {} instances\n",flat_sub_features.clone().count(),dataset.get_instances());
+
+	for sub_feature in flat_sub_features{
+		print!("{sub_feature} ");
 	}
 	println!();
-	println!("\n{num_subfeatures} sub_features");
-	println!("{} instances",dataset.get_instances());
+
 	let matrix = dataset.get_matrix();
 	println!("{matrix}");
+
+
 	Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>>{
 	let cli = Cli::parse();
 	match &cli.command{
-		Commands::Mrmr{path,csv,class,num_features}=>mrmr(path,*csv,class,num_features)?,
+		Commands::Mrmr{path,csv,class,num_features,verbose}=>mrmr(path,*csv,class,num_features,*verbose)?,
 		Commands::Matrix{path,output} => matrix(path,output)?,
 		Commands::Merge{datasets,output} => merge(datasets,output)?,
 		Commands::Show{path} => show(path)?,
