@@ -106,6 +106,8 @@ fn matrix(path:&Option<PathBuf>,output:&PathBuf) -> Result<(),Box<dyn Error>>{
 		Some(path) =>Box::new(BufReader::new(fs::File::open(path)?)),
 		None=>Box::new(BufReader::new(io::stdin()))
 	};
+
+	//TODO: display matrix construction elapsed time with verbose flag
 	let dataset = Dataset::new(Reader::from_reader(reader))?;
 	dataset.save(output)?;
 	println!("Matrix saved to {}",output.display());
