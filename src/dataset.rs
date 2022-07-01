@@ -32,36 +32,6 @@ struct MrmrInfo{
 	mrmr:f64,
 	feature:String
 }
-// Function to write onehotmatrix to binary file in graph format
-// fn write_one_hot(matrix: &IMatrix,subheaders:&Vec<String>){
-
-// 	let mut bin_file = File::create("bitmap.bitmap").unwrap();
-// 	let mut headers_file = File::create("headers.headers").unwrap();
-
-// 	for subheader in subheaders{
-// 		headers_file.write_all(format!("{} ",subheader).as_bytes()).unwrap();
-// 	}
-// 	let nodes = matrix.ncols();
-// 	let instances = matrix.nrows();
-// 	// print!("{} ", nodes as i32);
-// 	// print!("{} ",matrix.sum() as i64);
-
-// 	bin_file.write_all(&(nodes as i32).to_le_bytes()).unwrap();
-// 	bin_file.write_all(&(matrix.sum() as i64).to_le_bytes()).unwrap();
-
-
-// 	for i in 0..nodes{
-// 		// print!("{} ",((i+1) as i32) *-1);
-// 		bin_file.write_all(&(((i+1) as i32)*-1).to_le_bytes()).unwrap();
-
-// 		for j in 0..instances{
-// 			if *matrix.get((j,i)).unwrap() == 1{
-// 				// print!("{} ",(j+1) as i32);
-// 				bin_file.write_all(&((j+1) as i32).to_le_bytes()).unwrap();
-// 			}
-// 		}
-// 	}
-// }
 impl Dataset{
 
 	pub fn new <R: io::Read> (reader: Reader<R>)-> Result<Self,Box<dyn Error>>{
@@ -291,8 +261,10 @@ impl Merge<Dataset> for Dataset{
 					+ other.intersection(subheader_a, subheader_b).unwrap_or(0)
 			});
 		let num_subheaders = flat_subheaders.len();
+
+		// This line may be shown as an error by rust-analyzer. It is a known bug(https://github.com/rust-lang/rust-analyzer/issues/5441)
+		// But rustc compiles this without an problem
 		let matrix = DMatrix::from_iterator(num_subheaders, num_subheaders,subheaders_iter);
-		// let matrix = CscMatrix::from(&matrix);
 
 		Dataset{
 			headers,
