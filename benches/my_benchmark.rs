@@ -2,7 +2,7 @@
 
 use std::{error::Error, time::Instant};
 use csv::Reader;
-use mrmr_enhanced::dataset::*;
+use fed_mrmr::dataset::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn criterion_benchmark(c: &mut Criterion) {

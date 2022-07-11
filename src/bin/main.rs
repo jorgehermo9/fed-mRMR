@@ -5,7 +5,7 @@ use std::io::{self, BufReader, BufRead};
 use csv::Reader;
 use clap::{Parser,Subcommand};
 
-use mrmr_enhanced::dataset::*;
+use fed_mrmr::dataset::*;
 
 #[derive(Parser)]
 #[clap(author,version,about,long_about = None)]

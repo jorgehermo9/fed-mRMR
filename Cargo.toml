@@ -1,5 +1,5 @@
 [package]
-name = "mrmr-enhanced"
+name = "fed-mrmr"
 version = "0.1.0"
 edition = "2021"
 
@@ -27,6 +27,6 @@ name ="my_benchmark"
 harness = false
 
 [[bin]]
-name="mrmr-enhanced"
+name="fed-mrmr"
 path="src/bin/main.rs"
 test=false
