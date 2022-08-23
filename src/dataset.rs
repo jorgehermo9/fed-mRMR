@@ -33,42 +33,47 @@ struct MrmrInfo {
     feature: String,
 }
 
-fn dump_matrix(matrix: &CscMatrix<isize>) {
-    // dump matrix in adjacency list format
-    let matrix = DMatrix::from(matrix);
-    let mut writer = File::create("matrix.adj").unwrap();
-    let rows = matrix.nrows();
-    let cols = matrix.ncols();
-    let nodes = rows.max(cols);
-    let nnz = matrix.sum();
-    writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
-    writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
-    for i in 0..nodes {
-        writer
-            .write_all(&(-((i + 1) as i32)).to_le_bytes())
-            .unwrap();
+// fn dump_matrix(matrix: &CscMatrix<isize>) {
+//     // dump matrix in adjacency list format
+//     let matrix = DMatrix::from(matrix);
+//     let mut writer = File::create("matrix.adj").unwrap();
+//     let rows = matrix.nrows();
+//     let cols = matrix.ncols();
+//     let nodes = rows.max(cols);
+//     let nnz = matrix.sum();
+//     writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
+//     writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
+//     for i in 0..nodes {
+//         writer
+//             .write_all(&(-((i + 1) as i32)).to_le_bytes())
+//             .unwrap();
 
-        if i < rows {
-            for j in 0..cols {
-                if matrix[(i, j)] != 0 {
-                    writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
-                }
-            }
-        }
-    }
-}
-fn k2tree(matrix: &CscMatrix<isize>) {
-    let matrix = DMatrix::from(matrix);
-    let cols = matrix.ncols();
-    let rows = matrix.nrows();
+//         if i < rows {
+//             for j in 0..cols {
+//                 if matrix[(i, j)] != 0 {
+//                     writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
+//                 }
+//             }
+//         }
+//     }
+// }
+// fn k2tree(matrix: &CscMatrix<isize>) {
+//     let matrix = DMatrix::from(matrix);
+//     let cols = matrix.ncols();
+//     let rows = matrix.nrows();
 
-    let bm = BitMatrix::from_bits(rows, cols, matrix.transpose().iter().map(|x| *x != 0));
+//     let bm = BitMatrix::from_bits(rows, cols, matrix.transpose().iter().map(|x| *x != 0));
 
-    let k2tree = K2Tree::from_matrix(bm, 2, 2).unwrap();
-    let stems = k2tree.stems();
-    let leaves = k2tree.leaves();
-    dbg!(stems, leaves);
-}
+//     let k2tree = K2Tree::from_matrix(bm, 2, 2).unwrap();
+//     let stems = k2tree.stems().count();
+//     let leaves = k2tree.leaves().count();
+//     let total = stems + leaves;
+//     println!("{total} compressed bits");
+//     println!(
+//         "{} uncompressed bits",
+//         rows * cols * std::mem::size_of::<isize>()
+//     );
+// }
 impl Dataset {
     pub fn new<R: io::Read>(reader: Reader<R>) -> Result<Self, Box<dyn Error>> {
         let mut rdr = reader;
@@ -129,7 +134,7 @@ impl Dataset {
         .expect("Could not create sparse matrix: Invalid csc data");
 
         // k2tree(&sparse_matrix);
-        dump_matrix(&sparse_matrix);
+        // dump_matrix(&sparse_matrix);
         let result = sparse_matrix.transpose() * sparse_matrix;
         let result = DMatrix::from(&result);
 

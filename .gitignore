@@ -1,4 +1,5 @@
 target/
 datasets/
 adj/
+*.adj
 *.mrmr
