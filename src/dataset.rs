@@ -56,7 +56,6 @@ fn dump_matrix(matrix: &CscMatrix<isize>) {
             }
         }
     }
-    println!("{}", matrix.row(19999));
 }
 fn k2tree(matrix: &CscMatrix<isize>) {
     let matrix = DMatrix::from(matrix);
@@ -129,7 +128,7 @@ impl Dataset {
         )
         .expect("Could not create sparse matrix: Invalid csc data");
 
-        k2tree(&sparse_matrix);
+        // k2tree(&sparse_matrix);
         dump_matrix(&sparse_matrix);
         let result = sparse_matrix.transpose() * sparse_matrix;
         let result = DMatrix::from(&result);
