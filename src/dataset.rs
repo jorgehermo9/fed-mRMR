@@ -11,7 +11,7 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
-use k2_tree::{matrix::BitMatrix, K2Tree};
+
 use na::DMatrix;
 use nalgebra_sparse::csc::CscMatrix;
 use serde::{Deserialize, Serialize};
@@ -193,7 +193,7 @@ impl Dataset {
 
             m_info += a_and_b_prob * (a_and_b_prob / (a_prob * b_prob)).log2();
         }
-        return Some(m_info);
+        Some(m_info)
     }
 
     pub fn mrmr_features(&self, class: &str, limit: Option<usize>) -> Vec<(String, f64)> {
@@ -261,10 +261,10 @@ impl Dataset {
             selected_features.push(most_mrmr);
         }
 
-        return selected_features
+        selected_features
             .into_iter()
             .map(|feature_info| (feature_info.feature, feature_info.mrmr))
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>()
     }
 
     pub fn save<P: Sized + AsRef<Path>>(&self, path: P) -> Result<(), Box<dyn Error>> {
@@ -274,17 +274,17 @@ impl Dataset {
             .write(true)
             .truncate(true)
             .open(&path)?;
-        Ok(file.write_all(&content.as_bytes())?)
+        Ok(file.write_all(content.as_bytes())?)
     }
 
     pub fn from_path<P: Sized + AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
         let file = File::open(&path)?;
-        return Self::from_reader(&mut io::BufReader::new(file));
+        Self::from_reader(&mut io::BufReader::new(file))
     }
     pub fn from_reader<T: io::Read>(mut reader: T) -> Result<Self, Box<dyn Error>> {
         let mut buff = String::new();
         reader.read_to_string(&mut buff)?;
-        return Ok(serde_json::from_str(&buff)?);
+        Ok(serde_json::from_str(&buff)?)
     }
 
     pub fn get_headers(&self) -> &Vec<String> {
@@ -383,7 +383,7 @@ impl Merge<Vec<Dataset>> for Dataset {
         for to_merge in other {
             result = result.merge(to_merge)
         }
-        return result;
+        result
     }
 }
 

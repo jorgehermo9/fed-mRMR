@@ -74,7 +74,7 @@ fn mrmr(path:&Option<PathBuf>,csv:bool,class:&String,limit:&Option<usize>,verbos
 	};
 
 	let start_mrmr = Instant::now();
-	let selected_features = dataset.mrmr_features(class,limit.clone());
+	let selected_features = dataset.mrmr_features(class,*limit);
 
 	let feature_padding = dataset.get_headers().iter().map(|s|s.len()).max().unwrap();
 	//+2 because dot and first digit
@@ -139,7 +139,7 @@ fn show(path:&Option<PathBuf>) -> Result<(),Box<dyn Error>> {
 
 	let features = dataset.get_headers();
 	let sub_features_map = dataset.get_subheaders();
-	let flat_sub_features = features.into_iter().flat_map(|feature| sub_features_map.get(feature).unwrap());
+	let flat_sub_features = features.iter().flat_map(|feature| sub_features_map.get(feature).unwrap());
 	println!("{} sub_features, {} instances\n",flat_sub_features.clone().count(),dataset.get_instances());
 
 	for sub_feature in flat_sub_features{

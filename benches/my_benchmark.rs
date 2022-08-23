@@ -9,8 +9,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 	c.bench_function("iris", |b| b.iter(|| select_features(black_box("test/assets/iris.data.disc"))));
 	c.bench_function("test_lung", |b| b.iter(|| select_features(black_box("test/assets/test_lung_s3.csv"))));
 	c.bench_function("synthetic", |b| b.iter(|| select_features(black_box("test/assets/dataset.csv"))));
-	c.bench_function("merge_synthetic", |b| b.iter(|| merge_datasets_synthetic()));
-	c.bench_function("merge_lung", |b| b.iter(|| merge_datasets_lung()));
+	c.bench_function("merge_synthetic", |b| b.iter(merge_datasets_synthetic));
+	c.bench_function("merge_lung", |b| b.iter(merge_datasets_lung));
 
 }
 
