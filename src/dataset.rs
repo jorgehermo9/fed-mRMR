@@ -11,7 +11,6 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
-
 use na::DMatrix;
 use nalgebra_sparse::csc::CscMatrix;
 use serde::{Deserialize, Serialize};
@@ -33,30 +32,34 @@ struct MrmrInfo {
     feature: String,
 }
 
-// fn dump_matrix(matrix: &CscMatrix<isize>) {
-//     // dump matrix in adjacency list format
-//     let matrix = DMatrix::from(matrix);
-//     let mut writer = File::create("matrix.adj").unwrap();
-//     let rows = matrix.nrows();
-//     let cols = matrix.ncols();
-//     let nodes = rows.max(cols);
-//     let nnz = matrix.sum();
-//     writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
-//     writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
-//     for i in 0..nodes {
-//         writer
-//             .write_all(&(-((i + 1) as i32)).to_le_bytes())
-//             .unwrap();
+fn dump_matrix(matrix: &CscMatrix<isize>) {
+    // dump matrix in adjacency list format
+    let matrix = DMatrix::from(matrix);
+    let mut writer = File::create("matrix.adj").unwrap();
+    let rows = matrix.nrows();
+    let cols = matrix.ncols();
+    let nodes = rows.max(cols);
+    let nnz = matrix.sum();
+    println!(
+        "bitmap matrix {rows}x{cols}. {nnz} nnz values, {}% sparsity",
+        nnz as f32 / ((rows * cols) * 100) as f32
+    );
+    writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
+    writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
+    for i in 0..nodes {
+        writer
+            .write_all(&(-((i + 1) as i32)).to_le_bytes())
+            .unwrap();
 
-//         if i < rows {
-//             for j in 0..cols {
-//                 if matrix[(i, j)] != 0 {
-//                     writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
-//                 }
-//             }
-//         }
-//     }
-// }
+        if i < rows {
+            for j in 0..cols {
+                if matrix[(i, j)] != 0 {
+                    writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
+                }
+            }
+        }
+    }
+}
 // fn k2tree(matrix: &CscMatrix<isize>) {
 //     let matrix = DMatrix::from(matrix);
 //     let cols = matrix.ncols();
@@ -134,7 +137,8 @@ impl Dataset {
         .expect("Could not create sparse matrix: Invalid csc data");
 
         // k2tree(&sparse_matrix);
-        // dump_matrix(&sparse_matrix);
+
+        dump_matrix(&sparse_matrix);
         let result = sparse_matrix.transpose() * sparse_matrix;
         let result = DMatrix::from(&result);
 
