@@ -1,5 +1,7 @@
 # Building project
 
+To compile project, execute:
+
 ```console
 cargo build --release
 ```
