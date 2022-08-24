@@ -3,6 +3,7 @@ extern crate nalgebra as na;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::error::Error;
+use std::time::Instant;
 
 use csv::Reader;
 use std::fs::File;
@@ -41,8 +42,8 @@ fn dump_matrix(matrix: &CscMatrix<isize>) {
     let nodes = rows.max(cols);
     let nnz = matrix.sum();
     println!(
-        "bitmap matrix {rows}x{cols}. {nnz} nnz values, {}% sparsity",
-        nnz as f32 / ((rows * cols) * 100) as f32
+        "Bitmap matrix {rows}x{cols}. {nnz} nnz values, {}% sparsity",
+        100.0 - (nnz as f32 / ((rows * cols) as f32) * 100.0)
     );
     writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
     writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
@@ -97,6 +98,8 @@ impl Dataset {
         let mut col_offsets = vec![0];
         let mut row_indexes = vec![];
 
+        let start_bitmap_build = Instant::now();
+
         for (index, header) in headers.iter().enumerate() {
             let unique_values = instances
                 .iter()
@@ -136,10 +139,18 @@ impl Dataset {
         )
         .expect("Could not create sparse matrix: Invalid csc data");
 
-        // k2tree(&sparse_matrix);
+        let elapsed_bitmap_build = start_bitmap_build.elapsed().as_secs_f32();
+        println!("Bitmap matrix build time: {}s", elapsed_bitmap_build);
 
+        // k2tree(&sparse_matrix);
         dump_matrix(&sparse_matrix);
+
+        let start_multiplication = Instant::now();
         let result = sparse_matrix.transpose() * sparse_matrix;
+        let elapsed_multiplication = start_multiplication.elapsed().as_secs_f32();
+        println!("Multiplication time: {}s", elapsed_multiplication);
+
+        // Transform sparse matrix into a dense one , since sparsity is very low in occurrences matrix
         let result = DMatrix::from(&result);
 
         let positions = sub_headers
