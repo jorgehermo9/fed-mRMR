@@ -1,55 +1,47 @@
 #![allow(unused)]
 
-use std::{error::Error, time::Instant};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use csv::Reader;
 use fed_mrmr::dataset::*;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::{error::Error, time::Instant};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-	c.bench_function("iris", |b| b.iter(|| select_features(black_box("test/assets/iris.data.disc"))));
-	c.bench_function("test_lung", |b| b.iter(|| select_features(black_box("test/assets/test_lung_s3.csv"))));
-	c.bench_function("synthetic", |b| b.iter(|| select_features(black_box("test/assets/dataset.csv"))));
-	c.bench_function("merge_synthetic", |b| b.iter(merge_datasets_synthetic));
-	c.bench_function("merge_lung", |b| b.iter(merge_datasets_lung));
+    c.bench_function("iris", |b| {
+        b.iter(|| select_features(black_box("test/assets/iris.data.disc")))
+    });
+    c.bench_function("test_lung", |b| {
+        b.iter(|| select_features(black_box("test/assets/test_lung_s3.csv")))
+    });
 
+    c.bench_function("dataset_merge", |b| {
+        b.iter(|| merge_datasets(black_box("test/assets/dataset.csv"), 2))
+    });
+    c.bench_function("test_lung_merge", |b| {
+        b.iter(|| merge_datasets(black_box("test/assets/test_lung_s3.csv"), 2))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
+fn merge_datasets(base: &str, partitions: usize) -> Result<(), Box<dyn Error>> {
+    let complete = Dataset::new(Reader::from_path(base)?)?;
 
-fn merge_datasets_synthetic()-> Result<(), Box<dyn Error>>{
-	let complete = Dataset::new(Reader::from_path("test/assets/dataset.csv")?)?;
-	let partial_1 = Dataset::new(Reader::from_path("test/assets/dataset-1.csv")?)?;
-	let partial_2 = Dataset::new(Reader::from_path("test/assets/dataset-2.csv")?)?;
+    let mut partitions_datasets = (1..=partitions)
+        .map(|i| Dataset::new(Reader::from_path(format!("{base}.{i}")).unwrap()).unwrap());
+    let first_partition = partitions_datasets.next().unwrap();
+    let other_partitions = partitions_datasets.collect::<Vec<_>>();
+    let merged = first_partition.merge(other_partitions);
 
-	let merged = partial_1.merge(partial_2);
-	let complete_rank = complete.mrmr_features("class", None);
-	let merged_rank = merged.mrmr_features("class", None);
-	Ok(())
+    let complete_rank = complete.mrmr_features("class", None);
+    let merged_rank = merged.mrmr_features("class", None);
+    assert_eq!(merged_rank, complete_rank);
+    Ok(())
 }
-fn merge_datasets_lung()-> Result<(), Box<dyn Error>>{
-	let complete = Dataset::new(Reader::from_path("test/assets/test_lung_s3.csv")?)?;
-	let partial_1 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-1.csv")?)?;
-	let partial_2 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-2.csv")?)?;
+fn select_features(dataset_path: &str) -> Result<(), Box<dyn Error>> {
+    let start_matrix = Instant::now();
+    let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
+    let _ = dataset.mrmr_features("class", None);
 
-	let merged = partial_1.merge(partial_2);
-	let complete_rank = complete.mrmr_features("class", None);
-	let merged_rank = merged.mrmr_features("class", None);
-	Ok(())
-}
-fn select_features(dataset_path: &str)-> Result<(),Box<dyn Error>>{
-
-	let start_matrix = Instant::now();
-	let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
-
-	let duration_matrix = start_matrix.elapsed();
-	let start_mrmr = Instant::now();
-	let _ = dataset.mrmr_features("class",None);
-	let duration_mrmr = start_mrmr.elapsed();
-	// println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
-	// println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-	// println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
-	
-	Ok(())
+    Ok(())
 }

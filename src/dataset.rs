@@ -3,7 +3,7 @@ extern crate nalgebra as na;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::error::Error;
-use std::time::Instant;
+// use std::time::Instant;
 
 use csv::Reader;
 use std::fs::File;
@@ -33,51 +33,35 @@ struct MrmrInfo {
     feature: String,
 }
 
-fn dump_matrix(matrix: &CscMatrix<isize>) {
-    // dump matrix in adjacency list format
-    let matrix = DMatrix::from(matrix);
-    let mut writer = File::create("matrix.adj").unwrap();
-    let rows = matrix.nrows();
-    let cols = matrix.ncols();
-    let nodes = rows.max(cols);
-    let nnz = matrix.sum();
-    println!(
-        "Bitmap matrix {rows}x{cols}. {nnz} nnz values, {}% sparsity",
-        100.0 - (nnz as f32 / ((rows * cols) as f32) * 100.0)
-    );
-    writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
-    writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
-    for i in 0..nodes {
-        writer
-            .write_all(&(-((i + 1) as i32)).to_le_bytes())
-            .unwrap();
-
-        if i < rows {
-            for j in 0..cols {
-                if matrix[(i, j)] != 0 {
-                    writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
-                }
-            }
-        }
-    }
-}
-// fn k2tree(matrix: &CscMatrix<isize>) {
+// fn dump_matrix(matrix: &CscMatrix<isize>) {
+//     // dump matrix in adjacency list format
 //     let matrix = DMatrix::from(matrix);
-//     let cols = matrix.ncols();
+//     let mut writer = File::create("matrix.adj").unwrap();
 //     let rows = matrix.nrows();
+//     let cols = matrix.ncols();
+//     let nodes = rows.max(cols);
+//     let nnz = matrix.sum();
+//     // println!(
+//     //     "Bitmap matrix {rows}x{cols}. {nnz} nnz values, {}% sparsity",
+//     //     100.0 - (nnz as f32 / ((rows * cols) as f32) * 100.0)
+//     // );
+//     writer.write_all(&(nodes as i32).to_le_bytes()).unwrap();
+//     writer.write_all(&(nnz as i64).to_le_bytes()).unwrap();
+//     for i in 0..nodes {
+//         writer
+//             .write_all(&(-((i + 1) as i32)).to_le_bytes())
+//             .unwrap();
 
-//     let bm = BitMatrix::from_bits(rows, cols, matrix.transpose().iter().map(|x| *x != 0));
-
-//     let k2tree = K2Tree::from_matrix(bm, 2, 2).unwrap();
-//     let stems = k2tree.stems().count();
-//     let leaves = k2tree.leaves().count();
-//     let total = stems + leaves;
-//     println!("{total} compressed bits");
-//     println!(
-//         "{} uncompressed bits",
-//         rows * cols * std::mem::size_of::<isize>()
-//     );
+//         if i < rows {
+//             for j in 0..cols {
+//                 if matrix[(i, j)] != 0 {
+//                     writer.write_all(&((j + 1) as i32).to_le_bytes()).unwrap();
+//                 }
+//             }
+//         }
+//     }
 // }
+
 impl Dataset {
     pub fn new<R: io::Read>(reader: Reader<R>) -> Result<Self, Box<dyn Error>> {
         let mut rdr = reader;
@@ -98,7 +82,7 @@ impl Dataset {
         let mut col_offsets = vec![0];
         let mut row_indexes = vec![];
 
-        let start_bitmap_build = Instant::now();
+        // let start_bitmap_build = Instant::now();
 
         for (index, header) in headers.iter().enumerate() {
             let unique_values = instances
@@ -139,16 +123,15 @@ impl Dataset {
         )
         .expect("Could not create sparse matrix: Invalid csc data");
 
-        let elapsed_bitmap_build = start_bitmap_build.elapsed().as_secs_f32();
-        println!("Bitmap matrix build time: {}s", elapsed_bitmap_build);
+        // let elapsed_bitmap_build = start_bitmap_build.elapsed().as_secs_f32();
+        // println!("Bitmap matrix build time: {}s", elapsed_bitmap_build);
 
-        // k2tree(&sparse_matrix);
-        dump_matrix(&sparse_matrix);
+        // dump_matrix(&sparse_matrix);
 
-        let start_multiplication = Instant::now();
+        // let start_multiplication = Instant::now();
         let result = sparse_matrix.transpose() * sparse_matrix;
-        let elapsed_multiplication = start_multiplication.elapsed().as_secs_f32();
-        println!("Multiplication time: {}s", elapsed_multiplication);
+        // let elapsed_multiplication = start_multiplication.elapsed().as_secs_f32();
+        // println!("Multiplication time: {}s", elapsed_multiplication);
 
         // Transform sparse matrix into a dense one , since sparsity is very low in occurrences matrix
         let result = DMatrix::from(&result);
@@ -409,8 +392,8 @@ mod tests {
     #[test]
     fn merge_datasets_synthetic() -> Result<(), Box<dyn Error>> {
         let complete = Dataset::new(Reader::from_path("test/assets/dataset.csv")?)?;
-        let partial_1 = Dataset::new(Reader::from_path("test/assets/dataset-1.csv")?)?;
-        let partial_2 = Dataset::new(Reader::from_path("test/assets/dataset-2.csv")?)?;
+        let partial_1 = Dataset::new(Reader::from_path("test/assets/dataset.csv.1")?)?;
+        let partial_2 = Dataset::new(Reader::from_path("test/assets/dataset.csv.2")?)?;
 
         let merged = partial_1.merge(partial_2);
         let complete_rank = complete.mrmr_features("class", None);
@@ -424,8 +407,8 @@ mod tests {
     #[test]
     fn merge_datasets_microarray() -> Result<(), Box<dyn Error>> {
         let complete = Dataset::new(Reader::from_path("test/assets/test_lung_s3.csv")?)?;
-        let partial_1 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-1.csv")?)?;
-        let partial_2 = Dataset::new(Reader::from_path("test/assets/test_lung_s3-2.csv")?)?;
+        let partial_1 = Dataset::new(Reader::from_path("test/assets/test_lung_s3.csv.1")?)?;
+        let partial_2 = Dataset::new(Reader::from_path("test/assets/test_lung_s3.csv.2")?)?;
 
         let merged = partial_1.merge(partial_2);
         let complete_rank = complete.mrmr_features("class", None);
@@ -435,39 +418,4 @@ mod tests {
 
         Ok(())
     }
-    // use std::{error::Error, time::Instant};
-
-    // fn calc_mrmr_dataset(dataset_path: &str)-> Result<(),Box<dyn Error>>{
-
-    // 	let start_matrix = Instant::now();
-    // 	let dataset = Dataset::new(Reader::from_path(dataset_path)?)?;
-
-    // 	let duration_matrix = start_matrix.elapsed();
-    // 	let start_mrmr = Instant::now();
-    // 	let _ = dataset.mrmr_features("class",None);
-    // 	let duration_mrmr = start_mrmr.elapsed();
-    // 	println!("\nElapsed time for matrix construction: {}s",duration_matrix.as_secs_f32());
-    // 	println!("Elapsed time for mrmr calculation: {}s",duration_mrmr.as_secs_f32());
-    // 	println!("Total elapsed time: {}s",(duration_mrmr+duration_matrix).as_secs_f32());
-
-    // 	Ok(())
-    // }
-
-    // #[test]
-    // fn test_iris()-> Result<(), Box<dyn Error>>{
-    // 	calc_mrmr_dataset("test/datasets/iris.data.disc")?;
-    // 	Ok(())
-    // }
-
-    // // #[test]
-    // // fn test_connect_4()-> Result<(), Box<dyn Error>>{
-    // // 	calc_mrmr_dataset("test/datasets/connect-4.data")?;
-    // // 	Ok(())
-    // // }
-
-    // #[test]
-    // fn test_lung()-> Result<(), Box<dyn Error>>{
-    // 	calc_mrmr_dataset("test/datasets/test_lung_s3.csv")?;
-    // 	Ok(())
-    // }
 }
