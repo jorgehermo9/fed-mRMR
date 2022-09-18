@@ -41,12 +41,12 @@ else:
 first_pair_label = args.first
 second_pair_label = args.second
 
-first_pair_times = [round(b["mean"],3) for b in results[::2]]
-second_pair_times = [round(b["mean"],3) for b in results[1::2]]
+first_pair_times = [round(b["mean"],2) for b in results[::2]]
+second_pair_times = [round(b["mean"],2) for b in results[1::2]]
 
 
 x = np.arange(len(labels))  # the label locations
-width = 0.35  # the width of the bars
+width = 0.4  # the width of the bars
 
 fig, ax = plt.subplots()
 rects1 = ax.bar(x - width/2, first_pair_times, width, label=first_pair_label,color="dimgrey")
@@ -68,8 +68,8 @@ if args.title:
 ax.set_xticks(x, labels)
 ax.legend()
 
-ax.bar_label(rects1, padding=3)
-ax.bar_label(rects2, padding=3)
+ax.bar_label(rects1, padding=5)
+ax.bar_label(rects2, padding=5)
 
 fig.tight_layout()
 
