@@ -61,7 +61,7 @@ hyperfine \
 "cargo run -r -- mrmr matrix.mrmr -c class" \
 --export-json benchmark_all_datasets.json
 
-python3 plot_grouped_bars.py benchmark_all_datasets.json --labels "Lung,Colon,Lymphoma,Letter-recognition,Connect-4,MNIST" \
+python3 plot_grouped_bars.py benchmark_all_datasets.json --labels "Lung,Colon,Lymph.,Letter-recog.,Connect-4,MNIST" \
 --first "matrix calculation" --second "feature selection" -x "Dataset" -y "Time (s)" \
 --title "All Datasets" -o benchmark_all_datasets.pdf
 
@@ -116,20 +116,22 @@ python3 plot_grouped_bars.py comparison_original_selection.json --labels "Lung,C
 
 echo "Benchmarking federated learning simulation"
 hyperfine \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/2/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/2/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/4/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/4/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/8/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/8/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/16/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/16/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/32/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/32/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
-"cargo run -r -- merge -o merged.mrmr partitions/mnist/64/*.mrmr*" \
+"cargo run -r -- merge -o merged.mrmr partitions/mnist/64/*.mrmr.*" \
 "cargo run -r -- mrmr merged.mrmr -c class" \
 --export-json benchmark_mnist_federated_increasing_nodes.json --runs 5
 
 python3 plot_grouped_bars.py benchmark_mnist_federated_increasing_nodes.json --labels 2,4,8,16,32,64 \
 --first "matrix merge" --second "feature selection" -x "Number of nodes" -y "Time (s)" \
 --title "MNIST Dataset" -o benchmark_mnist_federated_increasing_nodes.pdf
+
+rm *.mrmr
