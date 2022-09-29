@@ -4,3 +4,4 @@ adj/
 experimental/partitions
 *.adj
 *.mrmr
+*.json
