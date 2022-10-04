@@ -32,6 +32,8 @@ parser.add_argument("-s","--sum",action="store_true",help="Sum the results of th
 parser.add_argument("--sum-label",help="Label for the sum of the fed-mrmr benchmarks")
 parser.add_argument("--federated",action="store_true",help="Plot the federated for the fed-mrmr matrix generation(min of each node)")
 parser.add_argument("--table",action="store_true",help="Print the table of the results")
+parser.add_argument("--big",type=int,help="big fontsize",default=20)
+parser.add_argument("--small",type=int,help="small fontsize",default=16)
 args = parser.parse_args()
 
 with open(args.file) as f:
@@ -54,7 +56,7 @@ if args.federated:
         with open(f"results/partitions/benchmark_federated_mnist_matrix_partition_{partition}.json") as f:
             partition_results = json.load(f)["results"]
             federated_max_matrix_bench.append(round(max([result["mean"] for result in partition_results]),2))
-    bench_name = "max fed-mrmr matrix"
+    bench_name = "max fed-mRMR matrix"
     benches.insert(0,bench_name)
     data[bench_name] = federated_max_matrix_bench
     if args.sum:
@@ -67,35 +69,36 @@ if args.sum and not args.federated:
         
 df = pd.DataFrame(data, index=labels,columns=benches)
 
+# Plot bar df with column labels as 2 decimal float
 ax = df.plot.bar(rot=0,colormap="copper",width=.8)
 
-plt.rcParams['font.size'] = '16'
-plt.legend(fontsize=20)
-plt.xticks(fontsize=16)
-plt.yticks(fontsize=16)
+plt.rcParams["font.size"] = str(args.small)
+plt.legend(fontsize=args.big)
+plt.xticks(fontsize=args.big)
+plt.yticks(fontsize=args.big)
 
 
 # Axis labels
 if args.title:
-    ax.set_title(args.title,fontsize=20)
+    ax.set_title(args.title,fontsize=args.big)
 
 if args.y_label:
-    ax.set_ylabel(args.y_label,fontsize=20)
+    ax.set_ylabel(args.y_label,fontsize=args.big)
 else:
-    ax.set_ylabel('Time (seconds)',fontsize=20)
+    ax.set_ylabel('Time (seconds)',fontsize=args.big)
 
 if args.x_label:
-    ax.set_xlabel(args.x_label,fontsize=20)
+    ax.set_xlabel(args.x_label,fontsize=args.big)
 
 for container in ax.containers:
-    ax.bar_label(container,padding=0)
+    ax.bar_label(container,padding=0,fmt="%.2f")
 if args.table:
     print(f"\\begin{{tabular}}{{{'c' * (len(benches)+1)}}}")
     print(f"\hline")
     print(f"{' & '.join(['Dataset'] + benches)}\\\\")
     print(f"\hline")
     for label in labels:
-        print(f"{' & '.join([label]+[str(df[bench][label]) for bench in benches])} \\\\")
+        print(f"{' & '.join([label]+[f'{df[bench][label]:.2f}' for bench in benches])} \\\\")
     print(f"\hline")
     print(f"\end{{tabular}}")
 else:

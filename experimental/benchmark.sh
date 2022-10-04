@@ -23,9 +23,10 @@ hyperfine \
 "cargo run -r -- mrmr matrix.mrmr -c class" \
 --export-json results/benchmark_colon_increasing_features.json
 
-# python3 plot_grouped.py results/benchmark_colon_increasing_features.json --labels 64,128,256,512,1024,2001 \
-# --benches "matrix calculation,feature selection" -x "Number of features" -y "Time (s)" \
-# --title "Colon Dataset" --sum --sum-label "total fed-mrmr" -o output/benchmark_colon_increasing_features.pdf
+python3 plot_grouped.py results/benchmark_colon_increasing_features.json --labels 64,128,256,512,1024,2001 \
+--benches "matrix calculation,feature selection" -x "Number of features" -y "Time (s)" \
+--title "Colon Dataset" --sum --sum-label "total fed-mRMR" --small 30 --big 34 \
+-o output/benchmark_colon_increasing_features.pdf
 
 # lymphoma dataset
 echo "Matrix generation and feature selection increasing # of features to select for Lymphoma dataset"
@@ -44,9 +45,10 @@ hyperfine \
 "cargo run -r -- mrmr matrix.mrmr -c class" \
 --export-json results/benchmark_lymphoma_increasing_features.json
 
-# python3 plot_grouped.py results/benchmark_lymphoma_increasing_features.json --labels 128,256,512,1024,2048,4027 \
-# --benches "matrix calculation,feature selection" -x "Number of features" -y "Time (s)" \
-# --title "Lymphoma Dataset" --sum --sum-label "total fed-mrmr" -o output/benchmark_lymphoma_increasing_features.pdf
+python3 plot_grouped.py results/benchmark_lymphoma_increasing_features.json --labels 128,256,512,1024,2048,4027 \
+--benches "matrix calculation,feature selection" -x "Number of features" -y "Time (s)" \
+--title "Lymphoma Dataset" --sum --sum-label "total fed-mRMR" --small 24 --big 34 \
+-o output/benchmark_lymphoma_increasing_features.pdf
 
 # Matrix and selection of all features for all datasets
 hyperfine \
@@ -64,9 +66,9 @@ hyperfine \
 "cargo run -r -- mrmr matrix.mrmr -c class" \
 --export-json results/benchmark_all_datasets.json
 
-# python3 plot_grouped.py results/benchmark_all_datasets.json --labels "Lung,Colon,Lymph.,Letter-recog.,Connect-4,MNIST" \
-# --benches "matrix calculation,feature selection" -x "Dataset" -y "Time (s)" \
-# --title "All Datasets" --sum --sum-label "total fed-mrmr" --table
+python3 plot_grouped.py results/benchmark_all_datasets.json --labels "Lung,Colon,Lymph.,Letter-recog.,Connect-4,MNIST" \
+--benches "matrix,feature selection" -x "Dataset" -y "Time (s)" \
+--title "All Datasets" --sum --sum-label "total fed-mRMR" --table
 
 # Comparison with original proposal
 hyperfine \
@@ -90,10 +92,10 @@ hyperfine \
 "./mrmr -i datasets/mnist_train.csv.disc.int -n 32 -s 43000" \
 --export-json results/benchmark_comparison_original.json --runs 5
 
-# python3 plot_grouped.py results/benchmark_comparison_original.json  \
-# --benches "fed-mrmr matrix,fed-mrmr selection,mrmr" --labels "Lung,Colon,Lymph.,Letter-recog.,Connect-4,MNIST" \
-# --title "fed-mrmr versus mRMR" -x "Dataset" -y "Time (s)" --sum --sum-label "total fed-mrmr" \
-# --table
+python3 plot_grouped.py results/benchmark_comparison_original.json  \
+--benches "matrix,selection,mRMR" --labels "Lung,Colon,Lymph.,Letter-recog.,Connect-4,MNIST" \
+--title "fed-mrmr versus mRMR" -x "Dataset" -y "Time (s)" --sum --sum-label "fed-mRMR" \
+--table
 
 # Comparison with original proposal increasing number of features
 hyperfine \
@@ -114,13 +116,13 @@ hyperfine \
 "./mrmr -i datasets/mnist_train.csv.disc.int -n 24 -s 43000" \
 "cargo run -r -- matrix -o matrix.mrmr datasets/mnist_train.csv.disc.int" \
 "cargo run -r -- mrmr -c class -n 32 matrix.mrmr" \
-"./mrmr -i datasets/mnist_train_csv.disc.int -n 32 -s 43000" \
+"./mrmr -i datasets/mnist_train.csv.disc.int -n 32 -s 43000" \
 --export-json results/benchmark_comparison_increasing_features.json --runs 5
 
-# python3 plot_grouped.py results/benchmark_comparison_increasing_features.json  \
-# --benches "fed-mrmr matrix,fed-mrmr selection,mrmr" --labels "2,4,8,16,24,32" --title "fed-mrmr versus mRMR increasing number of features" \
-# -x "Number of features" -y "Time (s)" --sum --sum-label "total fed-mrmr" \
-# -o output/benchmark_comparison_increasing_features.pdf
+python3 plot_grouped.py results/benchmark_comparison_increasing_features.json  \
+--benches "fed-mRMR matrix,fed-mRMR selection,mRMR" --labels "2,4,8,16,24,32" --title "fed-mRMR versus mRMR increasing number of features" \
+-x "Number of features" -y "Time (s)" --sum --sum-label "total fed-mRMR" --small 24 --big 34 \
+-o output/benchmark_comparison_increasing_features.pdf
 
 # Federated
 
@@ -158,8 +160,8 @@ hyperfine \
 --export-json results/benchmark_mnist_federated_increasing_nodes.json --runs 2
 
 python3 plot_grouped.py results/benchmark_mnist_federated_increasing_nodes.json \
---benches "matrix merge,feature selection" --labels "1,2,4,8,16,32,64,512,1024" --title "MNIST dataset" \
--x "Number of nodes" -y "Time (s)" --sum --sum-label "total fed-mrmr" --federated \
+--benches "matrix merge,feature selection" --labels "1,2,8,32,64,512,1024" --title "MNIST dataset" \
+-x "Number of nodes" -y "Time (s)" --sum --sum-label "total fed-mRMR" --federated \
 -o output/benchmark_mnist_federated_increasing_nodes.pdf
 
 rm *.mrmr
