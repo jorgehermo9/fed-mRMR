@@ -72,10 +72,9 @@ df = pd.DataFrame(data, index=labels,columns=benches)
 # Plot bar df with column labels as 2 decimal float
 ax = df.plot.bar(rot=0,colormap="copper",width=.8)
 
-plt.rcParams["font.size"] = str(args.small)
 plt.legend(fontsize=args.big)
-plt.xticks(fontsize=args.big)
-plt.yticks(fontsize=args.big)
+plt.xticks(fontsize=args.small)
+plt.yticks(fontsize=args.small)
 
 
 # Axis labels
@@ -90,8 +89,6 @@ else:
 if args.x_label:
     ax.set_xlabel(args.x_label,fontsize=args.big)
 
-for container in ax.containers:
-    ax.bar_label(container,padding=0,fmt="%.2f")
 if args.table:
     print(f"\\begin{{tabular}}{{{'c' * (len(benches)+1)}}}")
     print(f"\hline")

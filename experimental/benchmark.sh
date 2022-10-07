@@ -47,7 +47,7 @@ hyperfine \
 
 python3 plot_grouped.py results/benchmark_lymphoma_increasing_features.json --labels 128,256,512,1024,2048,4027 \
 --benches "matrix calculation,feature selection" -x "Number of features" -y "Time (s)" \
---title "Lymphoma Dataset" --sum --sum-label "total fed-mRMR" --small 24 --big 34 \
+--title "Lymphoma Dataset" --sum --sum-label "total fed-mRMR" --small 30 --big 34 \
 -o output/benchmark_lymphoma_increasing_features.pdf
 
 # Matrix and selection of all features for all datasets
@@ -121,7 +121,7 @@ hyperfine \
 
 python3 plot_grouped.py results/benchmark_comparison_increasing_features.json  \
 --benches "fed-mRMR matrix,fed-mRMR selection,mRMR" --labels "2,4,8,16,24,32" --title "fed-mRMR versus mRMR increasing number of features" \
--x "Number of features" -y "Time (s)" --sum --sum-label "total fed-mRMR" --small 24 --big 34 \
+-x "Number of features" -y "Time (s)" --sum --sum-label "total fed-mRMR" --small 30 --big 34 \
 -o output/benchmark_comparison_increasing_features.pdf
 
 # Federated
@@ -162,6 +162,7 @@ hyperfine \
 python3 plot_grouped.py results/benchmark_mnist_federated_increasing_nodes.json \
 --benches "matrix merge,feature selection" --labels "1,2,8,32,64,512,1024" --title "MNIST dataset" \
 -x "Number of nodes" -y "Time (s)" --sum --sum-label "total fed-mRMR" --federated \
+--small 30 --big 34 \
 -o output/benchmark_mnist_federated_increasing_nodes.pdf
 
 rm *.mrmr
