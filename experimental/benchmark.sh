@@ -140,29 +140,19 @@ done
 echo "Benchmarking federated learning simulation"
 hyperfine \
 "/bin/true" \
-"cargo run -r -- mrmr partitions/mnist/1/matrix.mrmr.0 -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/2/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/4/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/8/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/16/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/32/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/64/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/512/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 "cargo run -r -- merge -o merged.mrmr partitions/mnist/1024/*.mrmr.*" \
-"cargo run -r -- mrmr merged.mrmr -c class" \
 --export-json results/benchmark_mnist_federated_increasing_nodes.json --runs 2
 
 python3 plot_grouped.py results/benchmark_mnist_federated_increasing_nodes.json \
---benches "matrix merge,feature selection" --labels "1,2,4,8,16,32,64,512,1024" --title "MNIST dataset" \
--x "Number of nodes" -y "Time (s)" --sum --sum-label "total fed-mRMR" --federated \
---small 30 --big 34 \
--o output/benchmark_mnist_federated_increasing_nodes.pdf
+--benches "matrix merge" --labels "1,2,4,8,16,32,64,512,1024" --title "MNIST dataset" \
+-x "Number of nodes" -y "Time (s)" --federated \
+--small 30 --big 34 --width 0.6 -o benchmark_mnist_federated.json
 
 rm *.mrmr
