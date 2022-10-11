@@ -160,7 +160,7 @@ hyperfine \
 --export-json results/benchmark_mnist_federated_increasing_nodes.json --runs 2
 
 python3 plot_grouped.py results/benchmark_mnist_federated_increasing_nodes.json \
---benches "matrix merge,feature selection" --labels "1,2,8,32,64,512,1024" --title "MNIST dataset" \
+--benches "matrix merge,feature selection" --labels "1,2,4,8,16,32,64,512,1024" --title "MNIST dataset" \
 -x "Number of nodes" -y "Time (s)" --sum --sum-label "total fed-mRMR" --federated \
 --small 30 --big 34 \
 -o output/benchmark_mnist_federated_increasing_nodes.pdf

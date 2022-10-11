@@ -12,7 +12,6 @@ import argparse
 import json
 import matplotlib.pyplot as plt
 import pandas as pd
-import matplotlib
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("file", help="JSON file with benchmark results")
@@ -34,6 +33,8 @@ parser.add_argument("--federated",action="store_true",help="Plot the federated f
 parser.add_argument("--table",action="store_true",help="Print the table of the results")
 parser.add_argument("--big",type=int,help="big fontsize",default=20)
 parser.add_argument("--small",type=int,help="small fontsize",default=16)
+parser.add_argument("--width",type=float,help="small fontsize",default=.8)
+
 args = parser.parse_args()
 
 with open(args.file) as f:
@@ -57,7 +58,7 @@ if args.federated:
             partition_results = json.load(f)["results"]
             federated_max_matrix_bench.append(round(max([result["mean"] for result in partition_results]),2))
     bench_name = "max fed-mRMR matrix"
-    benches.insert(0,bench_name)
+    benches.insert(1,bench_name)
     data[bench_name] = federated_max_matrix_bench
     if args.sum:
         data[args.sum_label] = [sum(x) for x in zip(data[benches[0]],data[benches[1]],data[benches[2]])]
@@ -70,7 +71,7 @@ if args.sum and not args.federated:
 df = pd.DataFrame(data, index=labels,columns=benches)
 
 # Plot bar df with column labels as 2 decimal float
-ax = df.plot.bar(rot=0,colormap="copper",width=.8)
+ax = df.plot.bar(rot=0,colormap="copper",width=args.width,stacked=args.federated)
 
 plt.legend(fontsize=args.big)
 plt.xticks(fontsize=args.small)
@@ -88,6 +89,17 @@ else:
 
 if args.x_label:
     ax.set_xlabel(args.x_label,fontsize=args.big)
+
+label_colors = ['white', 'black', 'black']
+for i,c in enumerate(ax.containers):
+
+    # Optional: if the segment is small or 0, customize the labels
+    labels = [f"{v.get_height():.2f}" for v in c]
+    
+    # remove the labels parameter if it's not needed for customized labels
+    ax.bar_label(c,color=label_colors[i], labels=labels, label_type='edge',fmt="%0.2f",fontsize=args.small,padding=0)
+
+
 
 if args.table:
     print(f"\\begin{{tabular}}{{{'c' * (len(benches)+1)}}}")
