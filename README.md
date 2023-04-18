@@ -15,6 +15,8 @@ Available subcommands:
 - mrmr
 - show
 
+> Example datasets can be found under `test/assets` folder
+
 # Create occurrences matrix
 
 From a given csv dataset:
