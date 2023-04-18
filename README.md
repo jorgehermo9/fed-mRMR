@@ -40,13 +40,13 @@ From a previously serialized occurrences matrix:
 From a previously serialized occurrences matrix:
 
 ```console
-./target/release/fed-mrmr mrmr -c class matrix.mrmr
+./target/release/fed-mrmr mrmr -c <class> matrix.mrmr
 ```
 
 Alternatively, you can select features without a serialized mrmr matrix, by providing the csv dataset as input:
 
 ```console
-./target/release/fed-mrmr mrmr -c class --csv <dataset.csv>
+./target/release/fed-mrmr mrmr -c <class> --csv <dataset.csv>
 ```
 By using flag `-v` or `-vv`, more info about ranking is shown. 
 
